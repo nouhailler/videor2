@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #121212;
+            color: #e5e2e1;
+            overflow: hidden;
+            height: 100vh;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1c1b1b;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #464554;
+            border-radius: 10px;
+        }
+        .ken-burns-indicator {
+            background: linear-gradient(45deg, transparent 45%, #c0c1ff 45%, #c0c1ff 55%, transparent 55%);
+            background-size: 10px 10px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed": "#0d1c2d",
+                        "on-primary-fixed-variant": "#2f2ebe",
+                        "surface-tint": "#c0c1ff",
+                        "inverse-surface": "#e5e2e1",
+                        "on-secondary": "#233143",
+                        "inverse-on-surface": "#313030",
+                        "on-surface": "#e5e2e1",
+                        "outline": "#908fa0",
+                        "outline-variant": "#464554",
+                        "tertiary-container": "#d97721",
+                        "surface-variant": "#353534",
+                        "on-tertiary-fixed": "#301400",
+                        "on-tertiary-container": "#452000",
+                        "surface-container-low": "#1c1b1b",
+                        "secondary-container": "#39485a",
+                        "background": "#131313",
+                        "primary": "#c0c1ff",
+                        "secondary-fixed": "#d4e4fa",
+                        "secondary-fixed-dim": "#b9c8de",
+                        "surface": "#131313",
+                        "inverse-primary": "#494bd6",
+                        "on-primary-fixed": "#07006c",
+                        "error-container": "#93000a",
+                        "surface-bright": "#393939",
+                        "on-secondary-fixed-variant": "#39485a",
+                        "on-error-container": "#ffdad6",
+                        "secondary": "#b9c8de",
+                        "on-secondary-container": "#a7b6cc",
+                        "on-tertiary-fixed-variant": "#703700",
+                        "surface-container-high": "#2a2a2a",
+                        "tertiary": "#ffb783",
+                        "tertiary-fixed-dim": "#ffb783",
+                        "on-primary": "#1000a9",
+                        "primary-fixed-dim": "#c0c1ff",
+                        "surface-container": "#201f1f",
+                        "tertiary-fixed": "#ffdcc5",
+                        "on-error": "#690005",
+                        "primary-fixed": "#e1e0ff",
+                        "on-primary-container": "#0d0096",
+                        "surface-container-lowest": "#0e0e0e",
+                        "primary-container": "#8083ff",
+                        "on-surface-variant": "#c7c4d7",
+                        "error": "#ffb4ab",
+                        "on-background": "#e5e2e1",
+                        "surface-dim": "#131313",
+                        "on-tertiary": "#4f2500",
+                        "surface-container-highest": "#353534"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "panel-gap": "1px",
+                        "xl": "32px",
+                        "md": "16px",
+                        "base": "4px",
+                        "lg": "24px",
+                        "sm": "8px",
+                        "xs": "4px",
+                        "sidebar-width": "280px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["JetBrains Mono"],
+                        "headline-lg": ["Inter"],
+                        "label-sm": ["JetBrains Mono"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "label-sm": ["10px", {"lineHeight": "14px", "fontWeight": "500"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="flex flex-col h-screen overflow-hidden font-body-md text-body-md bg-background selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center w-full px-md h-12 bg-surface-container border-b border-outline-variant z-50">
+<div class="flex items-center gap-lg">
+<span class="text-headline-md font-headline-md font-bold text-primary">Vidéor</span>
+<nav class="hidden md:flex gap-md h-full items-center">
+<button class="text-primary font-bold border-b-2 border-primary h-full px-base flex items-center hover:bg-surface-variant transition-colors">New</button>
+<button class="text-on-surface-variant hover:bg-surface-variant transition-colors h-full px-base flex items-center">Open</button>
+<button class="text-on-surface-variant hover:bg-surface-variant transition-colors h-full px-base flex items-center">Save</button>
+<button class="text-on-surface-variant hover:bg-surface-variant transition-colors h-full px-base flex items-center">Export</button>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<button class="flex items-center gap-sm px-md py-xs bg-primary-container text-on-primary-container rounded-lg hover:opacity-80 duration-150 transition-all font-bold">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">mic</span>
+<span class="font-label-md text-label-md">Enregistrer Voix</span>
+</button>
+<div class="flex items-center gap-base">
+<button class="p-xs text-on-surface-variant hover:bg-surface-variant transition-colors rounded">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Workspace -->
+<main class="flex flex-1 overflow-hidden">
+<!-- SideNavBar (Media Library) -->
+<aside class="flex flex-col h-full w-sidebar-width bg-surface-container-low border-r border-outline-variant">
+<div class="p-md border-b border-outline-variant bg-surface-container-low">
+<div class="flex items-center gap-sm mb-xs">
+<span class="material-symbols-outlined text-primary">folder_open</span>
+<h2 class="text-headline-md font-headline-md font-bold text-primary">Media Library</h2>
+</div>
+<p class="text-label-sm font-label-sm text-on-surface-variant opacity-60">Used &amp; Unused Assets</p>
+</div>
+<!-- Library Tabs -->
+<div class="flex p-xs gap-panel-gap bg-surface-container-lowest"><button class="flex-1 py-xs px-sm rounded-lg bg-secondary-container text-on-secondary-container text-label-md font-label-md flex items-center justify-center gap-xs scale-[0.98] transition-transform"><span class="material-symbols-outlined text-sm">image</span><span>Photos</span></button><button class="flex-1 py-xs px-sm rounded-lg text-on-surface-variant hover:bg-surface-variant text-label-md font-label-md flex items-center justify-center gap-xs"><span class="material-symbols-outlined text-sm">audiotrack</span><span>Audio</span></button><button class="flex-1 py-xs px-sm rounded-lg text-on-surface-variant hover:bg-surface-variant text-label-md font-label-md flex items-center justify-center gap-xs"><span class="material-symbols-outlined text-sm">music_note</span><span>Music</span></button></div>
+<!-- Media Content -->
+<div class="flex-1 overflow-y-auto custom-scrollbar p-sm space-y-md">
+<!-- Section: Photos -->
+<div>
+<div class="flex items-center justify-between mb-sm px-xs">
+<span class="text-label-md font-label-md text-on-surface-variant uppercase tracking-wider">Photos</span>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">image</span>
+</div>
+<div class="grid grid-cols-2 gap-sm">
+<div class="relative group cursor-pointer border border-outline-variant rounded overflow-hidden aspect-video">
+<img class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300" data-alt="A sweeping cinematic view of jagged mountain peaks at sunset, with golden light hitting the snow-capped ridges and deep shadows in the valleys. The atmosphere is crisp, high-contrast, and professional, perfectly suited for a high-end Linux video editing application with a dark UI theme. The color palette consists of deep indigos and warm amber highlights." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD3wRlCoTuMGFhqSnIV4RZqcP369s5COdHmnx3gnuLakCtblR4VHOykTjXCixv0pKkdzNia4wp8TerPVHEvrjEJnPSeZrxMePDnJnvzT3WWn3LzJycihtxZEGx0jEE041EErRj_pBvaLDfzzyX-3VBO5FyuG_yWfMTwtiviuQZ9e0mmDWXz4Jvjq3GgUQJlo1shAEMCyq3fYvNoPzWVR8vV7x6GGlbj4wm0c4h_JAWZzwbBZByg_RG-1tKn6OSThzfoDVMi05LLdQw"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-xl">play_circle</span>
+</div>
+</div>
+<div class="relative group cursor-pointer border border-outline-variant rounded overflow-hidden aspect-video">
+<img class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300" data-alt="A serene alpine lake mirroring a dense pine forest and crystal clear blue sky, captured with sharp professional focus and a clean, minimalist aesthetic. The lighting is balanced and soft, emphasizing a sense of creative flow and stability. The image colors harmonize with a modern dark interface using subtle slate and silver tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCm_gepaCmhq8UmEpb3hrmjt8EE5_euWnAiGVvopINKetHkbpLoYfsz4lbVHakl46O33iW_j1L194Gd4AL88plkfuQrho8xRJzY-Myy2-OwyqJvY4mi5MUp0rbIh7Z4pbkOxgi6yvR4MsLmMJWnjTx7iTZLhA4BgIcUmjM04eIg7uYCCyfIr_v4ZsMeNEnlmEXry34zphGuMuwaXYs4ZWhqr4ozvsgzyoq7i6oRXm0I-lGPEjVhAPJ5K59NHtopCgP89a9V4hOn9R8"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-xl">play_circle</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Section: Audio -->
+<div>
+<div class="flex items-center justify-between mb-sm px-xs">
+<span class="text-label-md font-label-md text-on-surface-variant uppercase tracking-wider">Audio &amp; Music</span>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">audiotrack</span>
+</div>
+<div class="space-y-panel-gap">
+<div class="flex items-center gap-sm p-sm bg-surface-container-high rounded-lg hover:bg-surface-variant cursor-pointer transition-colors group">
+<span class="material-symbols-outlined text-primary text-sm">music_note</span>
+<div class="flex-1 min-w-0">
+<p class="text-label-md font-label-md text-on-surface truncate">Cinematic_Epic_Theme.wav</p>
+<p class="text-label-sm font-label-sm text-on-surface-variant opacity-60">03:45 • 48kHz</p>
+</div>
+</div>
+<div class="flex items-center gap-sm p-sm bg-surface-container-high/50 rounded-lg hover:bg-surface-variant cursor-pointer transition-colors group">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">mic</span>
+<div class="flex-1 min-w-0">
+<p class="text-label-md font-label-md text-on-surface truncate">Narrative_VO_Take04.mp3</p>
+<p class="text-label-sm font-label-sm text-on-surface-variant opacity-60">01:12 • 44.1kHz</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Sidebar Footer -->
+<div class="p-sm bg-surface-container-low border-t border-outline-variant flex items-center justify-between"><div class="flex items-center gap-md"><button class="flex items-center gap-xs text-label-md font-label-md text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined text-sm">settings</span><span>Settings</span></button><button class="flex items-center gap-xs text-label-md font-label-md text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined text-sm">help</span><span>Help</span></button></div><div class="flex items-center gap-xs"><div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div><span class="text-label-sm font-label-sm text-on-surface-variant">Prêt</span></div></div>
+</aside>
+<!-- Center Stage: Player and Timeline -->
+<div class="flex-1 flex flex-col min-w-0 bg-background">
+<!-- Video Player (Preview) -->
+<div class="flex-1 relative flex items-center justify-center p-md overflow-hidden bg-black/20">
+<div class="relative w-full h-full max-w-5xl bg-surface-container-lowest rounded shadow-2xl border border-outline-variant flex items-center justify-center group overflow-hidden">
+<img class="w-full h-full object-cover scale-110 opacity-90" data-alt="A wide-angle breathtaking mountain landscape with a calm river in the foreground, illuminated by a soft morning mist and a rising sun. The visual style is hyper-realistic and cinematic, emphasizing technical precision and depth. The mood is calm and authoritative, reflecting the professional standards of a high-performance video editor. Colors range from deep forest greens to ethereal golden glows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXlrhCMoPMf8w2eOWBYWJ-WulP2xi6GGZE7fyY6F6VCTKc1IPfaFeru0S-gbBWBxG8IWc2g7sHiqfDaVw41BtNeU15cV0aJslQ4Z-f4VnYaMlqgO5PwB2keTS-KTaiE9BoeiqUkI_hFs5HNkIpqIYRsO2JlMXa_RutQMzozr4VjIccMsWAwPqaWWaNliJmJc_KErQIM5F3pg1-mDLmp-BvFjX21bGQE-NwCu7UxkWihMyD_Amukg-57Sd95DxorRNNMxeVZ9Ms9RY"/>
+<!-- Ken Burns Indicator -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<div class="w-1/2 h-1/2 border-2 border-primary border-dashed opacity-40 relative">
+<div class="absolute -top-4 -left-4 p-xs bg-primary text-on-primary text-[10px] rounded font-label-md">START</div>
+<div class="absolute -bottom-8 -right-8 p-xs bg-tertiary-container text-white text-[10px] rounded font-label-md border-2 border-white/20">END (Zoom 1.2x)</div>
+<div class="absolute inset-0 ken-burns-indicator opacity-10"></div>
+</div>
+</div>
+<!-- Transport Overlays -->
+<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-md">
+<div class="flex flex-col gap-sm">
+<!-- Scrubber -->
+<div class="relative h-1 w-full bg-outline-variant rounded-full cursor-pointer group/seek">
+<div class="absolute h-full w-[15%] bg-primary rounded-full relative">
+<div class="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-primary border-4 border-black/40 rounded-full shadow-lg opacity-0 group-hover/seek:opacity-100 transition-opacity"></div>
+</div>
+</div>
+<!-- Controls Row -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-md">
+<button class="text-on-surface hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-2xl">skip_previous</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center bg-primary text-on-primary rounded-full hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">pause</span>
+</button>
+<button class="text-on-surface hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-2xl">skip_next</span>
+</button>
+<div class="ml-sm font-label-md text-label-md flex items-center gap-xs">
+<span class="text-primary">00:15</span>
+<span class="text-on-surface-variant">/</span>
+<span class="text-on-surface-variant">03:30</span>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="text-on-surface-variant hover:text-on-surface">
+<span class="material-symbols-outlined text-xl">volume_up</span>
+</button>
+<button class="text-on-surface-variant hover:text-on-surface">
+<span class="material-symbols-outlined text-xl">fullscreen</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Timeline -->
+<div class="h-64 bg-surface-container-low border-t border-outline-variant flex flex-col">
+<!-- Timeline Headers/Toolbars -->
+<div class="flex items-center h-10 px-md border-b border-outline-variant bg-surface-container-lowest gap-lg">
+<div class="flex items-center gap-sm">
+<button class="p-xs hover:bg-surface-variant rounded transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-lg">zoom_in</span>
+</button>
+<button class="p-xs hover:bg-surface-variant rounded transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-lg">zoom_out</span>
+</button>
+</div>
+<div class="h-4 w-px bg-outline-variant"></div>
+<div class="flex items-center gap-sm">
+<button class="p-xs hover:bg-surface-variant rounded transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-lg">content_cut</span>
+</button>
+<button class="p-xs hover:bg-surface-variant rounded transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-lg">layers</span>
+</button>
+</div>
+</div>
+<!-- Timeline Tracks -->
+<div class="flex-1 overflow-x-auto custom-scrollbar p-md space-y-panel-gap">
+<!-- Photo Track -->
+<div class="relative flex gap-xs items-center h-28">
+<div class="absolute -left-1 w-px h-full bg-primary z-10"></div> <!-- Playhead Line -->
+<!-- Vignette 1 -->
+<div class="h-full w-48 relative rounded border-2 border-primary overflow-hidden cursor-grab active:cursor-grabbing group shadow-lg">
+<img class="w-full h-full object-cover" data-alt="Cinematic landscape thumbnail showing lush green mountains and a misty valley, styled as a clip vignette in a professional video editor. The clip is highlighted with a primary indigo border, signaling its active selection status. The mood is creative and technically precise." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDAx4k-lY4Ri0biNqeuJZX2yFc071l_QwIbLYZ64adS4wqq6UNPhpMJy1pqvIhs_KEpL_VgOq9rjfoNsVIzSauV9B73nAJ0Z3rK7O_f9jfh7rHVMxTdBcsQbrJXUYu2lSoVt-ElC3yd5_96A07UHpoVNpSJloYWZIcvkzOTaugA9DRAKH0hy7A0ZO9LLraABYMrIhAXMyIq7nC5i-KfWm8rC6JYqTFvnTIbuhuIGxxGck1jniBaa5KxttN7kizr603jdUIvVhCWyM"/>
+<div class="absolute bottom-1 right-1 bg-black/60 px-xs rounded text-[10px] font-label-sm text-white">5s</div>
+<div class="absolute inset-y-0 left-0 w-2 bg-primary/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[10px] text-white">drag_indicator</span>
+</div>
+</div>
+<!-- Vignette 2 -->
+<div class="h-full w-32 relative rounded border border-outline-variant overflow-hidden cursor-grab active:cursor-grabbing group opacity-70 hover:opacity-100 transition-opacity">
+<img class="w-full h-full object-cover" data-alt="Jagged indigo mountain peaks thumbnail under a dramatic sky, presented as a clip on a digital timeline. The visual style is lean and architectural, using slate grey borders for inactive elements. The environment is high-performance and focused." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDdMl7cebkNXEK4Eaby6d2wBSlqC2NIhbWbVhc_mSqzCXHWfSHwthWBUNaqKH6HYOj9hWLxfPy8EF3DZ4bmMYv0M0w-ZqXVChk4HQPnyA5CGoI8eiUnVH8RcZFmSUURO9yno9PwG-M3D8RDx4sOTxiGTox6LOMBMPSydwV_YY3Y7ej8XsCZiZW8zK7GY-rKFKOpq4y2z3Ju4RmRZQmmLDin6kK8gkCSx5q1ck7RnkSddJNMZrZEbFE3AJocIq3aI5mo9XZjxvaef1A"/>
+<div class="absolute bottom-1 right-1 bg-black/60 px-xs rounded text-[10px] font-label-sm text-white">3s</div>
+</div>
+<!-- Vignette 3 -->
+<div class="h-full w-64 relative rounded border border-outline-variant overflow-hidden cursor-grab active:cursor-grabbing group opacity-70 hover:opacity-100 transition-opacity">
+<img class="w-full h-full object-cover" data-alt="Calm lake reflection thumbnail clip on a video editing timeline. The image is crisp and professional, fitting the modern minimalist aesthetic of a high-end Linux workspace. It recedes into the dark background, allowing the active editing tools to stand out." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDepqZM2wX56f53kRTTEVsZOB8K32eBRCs8YxeWmj2WXUBUBqhG5pcT1_wFQVniou0IZWw8q4zlcpdY8qD3Bn3kLu-64mqgcLR91E_fGZuPdqLh9SoVYj0DPGLKlfGBYmS4M2jvwy936MtPZzpnGpQSnjNLfvQyWo0W50WXb1moqelIfip9VwFE6FzdTQ--Y-sNBCQ2V7XMPWDbiDvmjzrnrr6oGgkYwMM5QsmpplhAjCd7QAsBW68ULNkSL3D3mfJFuDovHFeU4EY"/>
+<div class="absolute bottom-1 right-1 bg-black/60 px-xs rounded text-[10px] font-label-sm text-white">8s</div>
+</div>
+</div>
+<!-- Audio Track -->
+<div class="h-12 bg-secondary-container/20 rounded-lg relative overflow-hidden flex items-center border border-outline-variant/30">
+<!-- Waveform SVG Representation -->
+<div class="absolute inset-0 flex items-center opacity-80">
+<svg class="w-full h-12" preserveaspectratio="none" viewbox="0 0 1000 100">
+<path d="M0 50 L10 40 L20 60 L30 30 L40 70 L50 45 L60 55 L70 20 L80 80 L90 40 L100 60 L110 30 L120 70 L130 50 L140 50 L150 40 L160 60 L170 30 L180 70 L190 45 L200 55 L210 20 L220 80 L230 40 L240 60 L250 30 L260 70 L270 50 L280 50 L290 40 L300 60 L310 30 L320 70 L330 45 L340 55 L350 20 L360 80 L370 40 L380 60 L390 30 L400 70 L410 50 L420 50 L430 40 L440 60 L450 30 L460 70 L470 45 L480 55 L490 20 L500 80 L510 40 L520 60 L530 30 L540 70 L550 50 L560 50 L570 40 L580 60 L590 30 L600 70 L610 45 L620 55 L630 20 L640 80 L650 40 L660 60 L670 30 L680 70 L690 50 L700 50 L710 40 L720 60 L730 30 L740 70 L750 45 L760 55 L770 20 L780 80 L790 40 L800 60 L810 30 L820 70 L830 50 L840 50 L850 40 L860 60 L870 30 L880 70 L890 45 L900 55 L910 20 L920 80 L930 40 L940 60 L950 30 L960 70 L970 50 L980 50 L990 40 L1000 60" fill="none" stroke="#c0c1ff" stroke-width="2"></path>
+</svg>
+</div>
+<div class="absolute left-4 top-1 text-[8px] font-label-sm text-primary uppercase tracking-tighter mix-blend-difference">Narrative_VO_Take04.mp3</div>
+</div>
+</div>
+<!-- Time Markers -->
+<div class="h-6 flex items-end px-md pb-xs border-t border-outline-variant/30">
+<div class="flex gap-20 text-[9px] font-label-sm text-on-surface-variant opacity-40">
+<span>00:00:00</span>
+<span>00:00:05</span>
+<span>00:00:10</span>
+<span>00:00:15</span>
+<span>00:00:20</span>
+<span>00:00:25</span>
+<span>00:00:30</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Micro-interactions and effects
+        document.querySelectorAll('.group').forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                item.style.transition = 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
+            });
+        });
+
+        // Simulating some transport movement
+        let time = 15;
+        const timeDisplay = document.querySelector('.text-primary');
+        const playhead = document.querySelector('.relative.h-full.w-\\[15\\%\\]');
+        const seekThumb = document.querySelector('.w-4.h-4');
+        
+        setInterval(() => {
+            time = (time + 0.1) % 210;
+            const minutes = Math.floor(time / 60).toString().padStart(2, '0');
+            const seconds = Math.floor(time % 60).toString().padStart(2, '0');
+            if(timeDisplay) timeDisplay.textContent = `${minutes}:${seconds}`;
+            
+            const percentage = (time / 210) * 100;
+            if(playhead) playhead.style.width = `${percentage}%`;
+        }, 1000);
+    </script>
+</body></html>

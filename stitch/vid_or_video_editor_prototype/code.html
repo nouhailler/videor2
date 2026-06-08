@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #121212;
+            color: #e5e2e1;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+        .vignette-overlay {
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.4) 100%);
+        }
+        .panel-border {
+            border: 1px solid #2D2D2D;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-secondary-fixed": "#0d1c2d",
+                      "on-primary-fixed-variant": "#2f2ebe",
+                      "surface-tint": "#c0c1ff",
+                      "inverse-surface": "#e5e2e1",
+                      "on-secondary": "#233143",
+                      "inverse-on-surface": "#313030",
+                      "on-surface": "#e5e2e1",
+                      "outline": "#908fa0",
+                      "outline-variant": "#464554",
+                      "tertiary-container": "#d97721",
+                      "surface-variant": "#353534",
+                      "on-tertiary-fixed": "#301400",
+                      "on-tertiary-container": "#452000",
+                      "surface-container-low": "#1c1b1b",
+                      "secondary-container": "#39485a",
+                      "background": "#131313",
+                      "primary": "#c0c1ff",
+                      "secondary-fixed": "#d4e4fa",
+                      "secondary-fixed-dim": "#b9c8de",
+                      "surface": "#131313",
+                      "inverse-primary": "#494bd6",
+                      "on-primary-fixed": "#07006c",
+                      "error-container": "#93000a",
+                      "surface-bright": "#393939",
+                      "on-secondary-fixed-variant": "#39485a",
+                      "on-error-container": "#ffdad6",
+                      "secondary": "#b9c8de",
+                      "on-secondary-container": "#a7b6cc",
+                      "on-tertiary-fixed-variant": "#703700",
+                      "surface-container-high": "#2a2a2a",
+                      "tertiary": "#ffb783",
+                      "tertiary-fixed-dim": "#ffb783",
+                      "on-primary": "#1000a9",
+                      "primary-fixed-dim": "#c0c1ff",
+                      "surface-container": "#201f1f",
+                      "tertiary-fixed": "#ffdcc5",
+                      "on-error": "#690005",
+                      "primary-fixed": "#e1e0ff",
+                      "on-primary-container": "#0d0096",
+                      "surface-container-lowest": "#0e0e0e",
+                      "primary-container": "#8083ff",
+                      "on-surface-variant": "#c7c4d7",
+                      "error": "#ffb4ab",
+                      "on-background": "#e5e2e1",
+                      "surface-dim": "#131313",
+                      "on-tertiary": "#4f2500",
+                      "surface-container-highest": "#353534"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "panel-gap": "1px",
+                      "xl": "32px",
+                      "md": "16px",
+                      "base": "4px",
+                      "lg": "24px",
+                      "sm": "8px",
+                      "xs": "4px",
+                      "sidebar-width": "280px"
+              },
+              "fontFamily": {
+                      "label-md": ["JetBrains Mono"],
+                      "headline-lg": ["Inter"],
+                      "label-sm": ["JetBrains Mono"],
+                      "body-md": ["Inter"],
+                      "headline-md": ["Inter"]
+              },
+              "fontSize": {
+                      "label-md": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                      "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                      "label-sm": ["10px", {"lineHeight": "14px", "fontWeight": "500"}],
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "headline-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface flex flex-col h-screen">
+<!-- Top Navigation Bar -->
+<header class="bg-surface-container flex justify-between items-center w-full px-md h-12 border-b border-outline-variant">
+<div class="flex items-center gap-md">
+<h1 class="text-headline-md font-headline-md font-bold text-primary">Vidéor</h1>
+<nav class="hidden md:flex items-center gap-lg ml-xl">
+<a class="text-on-surface-variant hover:bg-surface-variant transition-colors px-sm py-1 font-label-md text-label-md" href="#">New</a>
+<a class="text-on-surface-variant hover:bg-surface-variant transition-colors px-sm py-1 font-label-md text-label-md" href="#">Open</a>
+<a class="text-on-surface-variant hover:bg-surface-variant transition-colors px-sm py-1 font-label-md text-label-md" href="#">Save</a>
+<a class="text-on-surface-variant hover:bg-surface-variant transition-colors px-sm py-1 font-label-md text-label-md" href="#">Export</a>
+</nav>
+</div>
+<div class="flex items-center gap-sm">
+<button class="material-symbols-outlined p-sm rounded-lg text-primary hover:bg-surface-variant transition-colors">mic</button>
+<button class="material-symbols-outlined p-sm rounded-lg text-primary hover:bg-surface-variant transition-colors">settings</button>
+</div>
+</header>
+<main class="flex flex-1 overflow-hidden relative">
+<!-- Sidebar Navigation -->
+<aside class="flex flex-col h-full p-sm gap-panel-gap bg-surface-container-low border-r border-outline-variant w-sidebar-width">
+<div class="mb-lg px-xs">
+<div class="flex items-center gap-sm mb-xs">
+<span class="material-symbols-outlined text-primary" data-weight="fill">image</span>
+<h2 class="text-headline-md font-headline-md text-on-surface">Media Library</h2>
+</div>
+<p class="text-label-sm font-label-sm text-on-surface-variant opacity-70">Used &amp; Unused Assets</p>
+</div>
+<nav class="flex flex-col gap-xs">
+<button class="bg-secondary-container text-on-secondary-container rounded-lg flex items-center gap-md p-sm scale-[0.98] transition-transform">
+<span class="material-symbols-outlined" data-weight="fill">image</span>
+<span class="text-label-md font-label-md">Photos</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-variant rounded-lg flex items-center gap-md p-sm transition-colors">
+<span class="material-symbols-outlined">audiotrack</span>
+<span class="text-label-md font-label-md">Audio</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-variant rounded-lg flex items-center gap-md p-sm transition-colors">
+<span class="material-symbols-outlined">music_note</span>
+<span class="text-label-md font-label-md">Music</span>
+</button>
+</nav>
+<div class="mt-auto flex flex-col gap-xs border-t border-outline-variant pt-sm">
+<button class="text-on-surface-variant hover:bg-surface-variant rounded-lg flex items-center gap-md p-sm transition-colors">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-label-md font-label-md">Settings</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-variant rounded-lg flex items-center gap-md p-sm transition-colors">
+<span class="material-symbols-outlined">help</span>
+<span class="text-label-md font-label-md">Help</span>
+</button>
+</div>
+</aside>
+<!-- Main Workspace (Background Canvas) -->
+<section class="flex-1 bg-background relative p-xl overflow-hidden">
+<!-- Simulated Editor View -->
+<div class="w-full h-full border border-outline-variant rounded-lg bg-surface-container flex flex-col items-center justify-center gap-lg">
+<div class="relative group cursor-pointer" onclick="toggleModal()">
+<img alt="Forest Landscape" class="max-h-[400px] rounded-lg border-2 border-primary shadow-2xl" data-alt="A lush, cinematic mountain forest landscape at dusk, with soft mist rolling through dark evergreen trees. The lighting is moody and desaturated with cool blues and deep greens, reflecting a high-end professional color grade. The composition follows the rule of thirds, evoking a sense of tranquil mystery and stability consistent with a modern Linux-based video editing software aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB59PZ763_QgCe-u7QfufBzgFAc5Sb7jirVN6qySkfIba8Nb5zbtXssl_PtbloAewLs8nTb-AWnqDp6m7zdua_MSZU7wwIXpCw5byPPLHLCP8xuBAsPKb4OL5tt0HkDyNjF5Xah0pkklZMnpQbhDgtC7AT1y0jvh1DijaQ6rmT7-X9D0VKqvf2Dr9gudMTbFHeKvkXWI1fj1jVb22IeTsSQtI9Sl7OS8VH99jDuuYamg5XZTbHYLYcDTkoTUnPMgeGXJfgNHCJm9O8"/>
+<div class="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-[48px]">edit</span>
+</div>
+</div>
+<p class="text-label-md font-label-md text-on-surface-variant">Click to open Photo Details &amp; Effects</p>
+</div>
+</section>
+<!-- Photo Details & Effects Modal (Side Panel Drawer Style) -->
+<div class="absolute inset-y-0 right-0 w-[420px] bg-surface-container-high border-l border-outline-variant shadow-2xl z-50 transform translate-x-full transition-transform duration-300 flex flex-col" id="sideModal">
+<!-- Header -->
+<div class="h-14 flex items-center justify-between px-md border-b border-outline-variant">
+<h3 class="text-headline-md font-headline-md text-on-surface">Photo Inspector</h3>
+<button class="material-symbols-outlined hover:bg-surface-variant p-xs rounded transition-colors text-on-surface-variant" onclick="toggleModal()">close</button>
+</div>
+<!-- Preview Thumbnail -->
+<div class="p-md bg-surface-container-lowest">
+<div class="aspect-video relative rounded-lg overflow-hidden panel-border">
+<img class="w-full h-full object-cover transition-all duration-500" data-alt="A close-up preview of a cinematic forest image used as a thumbnail in a video editor inspector. The photo shows misty mountains and sharp pine details, rendered in cool tones. The interface around it is dark and technical, with a 1px border creating a professional, clean separation typical of a minimalist corporate production tool." id="modalPreview" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7Wi49Hk2WkNzJiFHbJk_6-newfy-ur_obKzBJUpGG-toj4U90FE_9pt0K4ORS2xpH-V5KttslifivDlLgodnT4uSZP4Cnq6c5lBQsNVyFPwwZHywqSRBvWM_dQPJnBVROmxbmp2j7UGxHbdDk3lFmBd4-EP_bvzUJnrBh3yvsYOImzHT3KDz6WYa454QqK_mDgOEn24KRRvstQAkVxS0BMCE3C7qReBID8TQ8D4z98jsm3ThQC2BGTJj225lM3u-E4KM8QD9Tls8"/>
+<div class="absolute bottom-2 right-2 bg-black/60 px-2 py-1 rounded text-label-sm font-label-sm text-white backdrop-blur-sm">
+                        1920x1080 | 24fps
+                    </div>
+</div>
+</div>
+<!-- Tabs -->
+<div class="flex border-b border-outline-variant">
+<button class="flex-1 py-3 text-label-md font-label-md border-b-2 border-primary text-primary transition-all" id="tab-proprietes" onclick="switchTab('proprietes')">Propriétés</button>
+<button class="flex-1 py-3 text-label-md font-label-md border-b-2 border-transparent text-on-surface-variant hover:text-on-surface transition-all" id="tab-effets" onclick="switchTab('effets')">Effets</button>
+<button class="flex-1 py-3 text-label-md font-label-md border-b-2 border-transparent text-on-surface-variant hover:text-on-surface transition-all" id="tab-commentaires" onclick="switchTab('commentaires')">Commentaires</button>
+</div>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto p-md space-y-lg scrollbar-hide">
+<!-- Propriétés Tab -->
+<div class="tab-content space-y-md" id="content-proprietes">
+<div class="space-y-xs">
+<label class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Rotation</label>
+<div class="grid grid-cols-4 gap-xs">
+<button class="bg-surface-variant p-sm rounded text-label-md font-label-md hover:bg-primary-container hover:text-on-primary-container transition-colors" onclick="rotate(0)">0°</button>
+<button class="bg-surface-variant p-sm rounded text-label-md font-label-md hover:bg-primary-container hover:text-on-primary-container transition-colors" onclick="rotate(90)">90°</button>
+<button class="bg-surface-variant p-sm rounded text-label-md font-label-md hover:bg-primary-container hover:text-on-primary-container transition-colors" onclick="rotate(180)">180°</button>
+<button class="bg-surface-variant p-sm rounded text-label-md font-label-md hover:bg-primary-container hover:text-on-primary-container transition-colors" onclick="rotate(270)">270°</button>
+</div>
+</div>
+<div class="space-y-xs">
+<label class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Outils</label>
+<button class="w-full flex items-center justify-center gap-sm bg-outline-variant hover:bg-outline text-on-surface p-sm rounded transition-colors font-label-md text-label-md">
+<span class="material-symbols-outlined">crop</span>
+                            Crop &amp; Scale
+                        </button>
+</div>
+<div class="space-y-xs">
+<label class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Durée (secondes)</label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded p-sm focus:border-primary focus:ring-0 text-on-surface font-label-md outline-none" step="0.5" type="number" value="5.0"/>
+<span class="absolute right-3 top-2 text-on-surface-variant text-label-sm">sec</span>
+</div>
+</div>
+</div>
+<!-- Effets Tab -->
+<div class="tab-content hidden space-y-md" id="content-effets">
+<div class="grid grid-cols-2 gap-sm">
+<button class="effect-btn group flex flex-col gap-xs p-xs rounded-lg border border-primary bg-primary/5" onclick="applyEffect('none')">
+<div class="aspect-video bg-surface-container-low rounded overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Default natural forest image preview." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjFAsYeWxPHOrXwr9bLShZJid-ZOe0d94QmxAgMNdomii-qTeZ6zqcr4yH6iE1RBHDYWpGh-FOEd2D0CRFvx1fPMP38OeqXFT1W881TX2ykWFG3f4CfE0NkIfMmRAaLZ9Hq3xNfQEOySjyh7CDME-2wef0V6MQ7i97g353LJSeuFUUHSL1LwVvkeQen31SRsaSvdd9zwrav97LOb3VWVfumnaV3uaq7Bs4HJqWKFhJM04RJE3WDAD1p5j5sFqIowPbQDHviUyqcT4"/>
+</div>
+<span class="text-label-sm font-label-sm p-xs text-on-surface">Aucun</span>
+</button>
+<button class="effect-btn group flex flex-col gap-xs p-xs rounded-lg border border-outline-variant hover:border-primary transition-colors" onclick="applyEffect('grayscale(100%)')">
+<div class="aspect-video bg-surface-container-low rounded overflow-hidden">
+<img class="w-full h-full object-cover grayscale" data-alt="Black and white forest image preview." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAi9vQe7RPqONJOBkCZOibZYIC_YwFJf77x7hErdXCN_w5KO9hxs1O4ruyXe0WWKo_o4RNdMUx359Xk1LzpqZyYQwcrXkxocJxBsK5HnZZCNCMHYiOII8_zL_YvH_2EZ9JseHkhpzBFEXXUkuCcRFt2XtKnhyKmRDxS7CISbZ3_oj6CPnpvG7KQW8lOMsue2ko-FPTVV_9BrDZqaM-KpPIezzSrlMckPEgDxAxBfbJ65AURCl6WvmF8cs3H9oiAi0uv_z4tpPQXwl0"/>
+</div>
+<span class="text-label-sm font-label-sm p-xs text-on-surface-variant">Noir et Blanc</span>
+</button>
+<button class="effect-btn group flex flex-col gap-xs p-xs rounded-lg border border-outline-variant hover:border-primary transition-colors" onclick="applyEffect('sepia(80%)')">
+<div class="aspect-video bg-surface-container-low rounded overflow-hidden">
+<img class="w-full h-full object-cover sepia" data-alt="Sepia toned forest image preview." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDK9ipjqOIjAY17bdFI3R-0-D7p4lfz3tnzwSxhCNtxrl6-jMJFWLThN3c2QU1ALFqgoy2JMLKfyintHrDbT8mq_5ryvGdRAGYv9zQIWeP4EsVbp3AspdSnjbK0EQiessoSDgSJd3ESy85YAW9slRA7REb-_t8It-JEdQD96fVw3ppVVBmpjsE4tz076GrJ4iKLrd3dhDHo5Zz4ycqN6Cj3AqT6LWNiKxd1CgL92Ii4nLrwODdozIHVtfLvDTEmOh12mBANHrWg3I"/>
+</div>
+<span class="text-label-sm font-label-sm p-xs text-on-surface-variant">Sépia</span>
+</button>
+<button class="effect-btn group flex flex-col gap-xs p-xs rounded-lg border border-outline-variant hover:border-primary transition-colors" onclick="applyEffect('blur(2px) brightness(1.2)')">
+<div class="aspect-video bg-surface-container-low rounded overflow-hidden">
+<img class="w-full h-full object-cover opacity-80" data-alt="Soft fade forest image preview." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXooddWcFi78duh-jEDX0hybxnUnRDqKtsHpcUoX4lHPkwD6s3S6u1Z9BW2H88EbfZs933Ah9FJQ2mGCVTsU2yuCOPmZs6_2LYg860s7bTwUksZw7OTJUqEJMi1A18R2STgnx8X0uYpBh5G1tV8ArMMGnMyJlndCJ5ZT_1urG9DeFFQogYoMx2FtlAdxjROg5O16qW5zGKixputBh-1pPd8VvQCIbp3dVu9xyc753keXyQykpt6xse1dnfwvLqDM2MWMlRtS6YfK8"/>
+</div>
+<span class="text-label-sm font-label-sm p-xs text-on-surface-variant">Fondu</span>
+</button>
+</div>
+<button class="w-full bg-secondary-container text-on-secondary-container p-sm rounded font-label-md text-label-md flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined">zoom_in</span>
+                        Zoom Ken Burns
+                    </button>
+</div>
+<!-- Commentaires Tab -->
+<div class="tab-content hidden space-y-md" id="content-commentaires">
+<div class="space-y-xs">
+<label class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Titre</label>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded p-sm focus:border-primary focus:ring-0 text-on-surface font-label-md outline-none" placeholder="Entrez un titre..." type="text"/>
+</div>
+<div class="space-y-xs">
+<label class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Description</label>
+<textarea class="w-full bg-surface-container-lowest border border-outline-variant rounded p-sm focus:border-primary focus:ring-0 text-on-surface font-label-md outline-none resize-none" placeholder="Description de la scène..." rows="3"></textarea>
+</div>
+<div class="space-y-xs">
+<label class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Commentaire technique</label>
+<textarea class="w-full bg-surface-container-lowest border border-outline-variant rounded p-sm focus:border-primary focus:ring-0 text-on-surface font-label-md outline-none resize-none" placeholder="Notes de production..." rows="3"></textarea>
+</div>
+</div>
+</div>
+<!-- Footer Action Row -->
+<div class="p-md border-t border-outline-variant bg-surface-container flex gap-sm">
+<button class="flex-1 py-2 rounded-lg border border-outline-variant text-on-surface-variant font-headline-md text-body-md hover:bg-surface-variant transition-colors" onclick="toggleModal()">
+                    Annuler
+                </button>
+<button class="flex-1 py-2 rounded-lg bg-primary text-on-primary font-headline-md text-body-md hover:opacity-90 transition-opacity">
+                    Enregistrer
+                </button>
+</div>
+</div>
+</main>
+<!-- Bottom Nav Bar (Mobile Only) -->
+<nav class="md:hidden flex justify-around items-center h-16 bg-surface-container border-t border-outline-variant">
+<button class="flex flex-col items-center text-primary">
+<span class="material-symbols-outlined" data-weight="fill">home</span>
+<span class="text-[10px] font-label-sm">Home</span>
+</button>
+<button class="flex flex-col items-center text-on-surface-variant">
+<span class="material-symbols-outlined">explore</span>
+<span class="text-[10px] font-label-sm">Library</span>
+</button>
+<button class="flex flex-col items-center text-on-surface-variant">
+<span class="material-symbols-outlined">edit</span>
+<span class="text-[10px] font-label-sm">Edit</span>
+</button>
+</nav>
+<script>
+        function toggleModal() {
+            const modal = document.getElementById('sideModal');
+            modal.classList.toggle('translate-x-full');
+        }
+
+        function switchTab(tabId) {
+            // Hide all contents
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            // Show target content
+            document.getElementById('content-' + tabId).classList.remove('hidden');
+
+            // Reset tab styles
+            const tabs = ['proprietes', 'effets', 'commentaires'];
+            tabs.forEach(t => {
+                const el = document.getElementById('tab-' + t);
+                el.classList.remove('border-primary', 'text-primary');
+                el.classList.add('border-transparent', 'text-on-surface-variant');
+            });
+
+            // Highlight active tab
+            const activeTab = document.getElementById('tab-' + tabId);
+            activeTab.classList.remove('border-transparent', 'text-on-surface-variant');
+            activeTab.classList.add('border-primary', 'text-primary');
+        }
+
+        function rotate(deg) {
+            const preview = document.getElementById('modalPreview');
+            preview.style.transform = `rotate(${deg}deg)`;
+        }
+
+        function applyEffect(filter) {
+            const preview = document.getElementById('modalPreview');
+            preview.style.filter = filter;
+            
+            // Visual feedback for selected button
+            document.querySelectorAll('.effect-btn').forEach(btn => {
+                btn.classList.remove('border-primary', 'bg-primary/5');
+                btn.classList.add('border-outline-variant');
+            });
+            event.currentTarget.classList.add('border-primary', 'bg-primary/5');
+            event.currentTarget.classList.remove('border-outline-variant');
+        }
+
+        // Initialize state
+        window.onload = () => {
+            setTimeout(() => toggleModal(), 500); // Auto-open for demo
+        }
+    </script>
+</body></html>

@@ -1,0 +1,7 @@
+node_modules/
+dist/
+release/
+*.log
+.vite/
+.gitdata/
+.DS_Store

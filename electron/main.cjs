@@ -13,6 +13,7 @@ function createWindow() {
     height: 960,
     minWidth: 1100,
     minHeight: 720,
+    icon: path.join(__dirname, "../build/icon.png"),
     backgroundColor: "#131313",
     title: "Vidéor",
     webPreferences: {

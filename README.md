@@ -15,6 +15,10 @@ d'une piste audio, sans la complexité d'un logiciel de montage professionnel.
 
 </div>
 
+<p align="center">
+  <img src="build/icon.png" alt="Icône Vidéor" width="160">
+</p>
+
 ![Aperçu de l'interface Vidéor](stitch/espace_de_travail_coh_rent/screen.png)
 
 > [!NOTE]
@@ -32,6 +36,7 @@ d'une piste audio, sans la complexité d'un logiciel de montage professionnel.
 - [Architecture](#-architecture)
 - [Format des projets](#-format-des-projets)
 - [Feuille de route](#-feuille-de-route)
+- [Suivi du projet](#-suivi-du-projet)
 
 ## 💡 Pourquoi Vidéor ?
 
@@ -127,12 +132,12 @@ npm start
 npm run package:linux
 ```
 
-Les paquets sont générés dans le dossier `dist/` :
+Les paquets sont générés dans le dossier `release/` :
 
 ```text
-dist/
+release/
 ├── Videor-0.1.0-x64.AppImage
-└── Videor-0.1.0-x64.deb
+└── Videor-0.1.0-amd64.deb
 ```
 
 ## 🏗️ Architecture
@@ -187,6 +192,12 @@ contenant notamment :
 - [ ] Enregistrement d'une narration
 - [ ] Projet portable avec médias embarqués
 - [ ] Tests automatisés de l'interface et de l'export
+
+## 📝 Suivi du projet
+
+- Consultez [`CHANGELOG.md`](CHANGELOG.md) pour les changements entre versions.
+- Consultez [`CONTEXT.md`](CONTEXT.md) pour reprendre rapidement le
+  développement et connaître les limites actuelles.
 
 ---
 

@@ -2,7 +2,13 @@
   "name": "videor",
   "version": "0.1.0",
   "private": true,
-  "description": "Editeur de diaporamas video simple pour Linux",
+  "description": "Éditeur de diaporamas vidéo simple pour Linux",
+  "author": {
+    "name": "Patrick Nouhailler",
+    "email": "patrick.nouhailler@gmail.com"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/nouhailler/videor2",
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
@@ -12,11 +18,7 @@
     "test": "vitest run",
     "package:linux": "npm run build && electron-builder --linux AppImage deb"
   },
-  "dependencies": {
-    "lucide-react": "^0.468.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
@@ -24,6 +26,9 @@
     "concurrently": "^9.1.2",
     "electron": "^34.0.0",
     "electron-builder": "^25.1.8",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "typescript": "^5.7.2",
     "vite": "^6.0.5",
     "vitest": "^2.1.8",
@@ -32,12 +37,17 @@
   "build": {
     "appId": "fr.videor.app",
     "productName": "Vidéor",
+    "directories": {
+      "output": "release"
+    },
     "files": [
       "dist/**/*",
+      "build/icon.png",
       "electron/**/*",
       "package.json"
     ],
     "linux": {
+      "icon": "build/icon.png",
       "target": ["AppImage", "deb"],
       "category": "AudioVideo",
       "artifactName": "Videor-${version}-${arch}.${ext}"

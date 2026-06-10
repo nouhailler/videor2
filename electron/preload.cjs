@@ -1,11 +1,15 @@
 const { contextBridge, ipcRenderer, webUtils } = require("electron");
-const { pathToFileURL } = require("node:url");
+
+function toMediaUrl(filePath) {
+  return `videor-media://local/?path=${encodeURIComponent(filePath)}`;
+}
 
 contextBridge.exposeInMainWorld("videor", {
   choosePhotos: () => ipcRenderer.invoke("media:choose-photos"),
   chooseAudio: () => ipcRenderer.invoke("media:choose-audio"),
+  preparePhotos: (paths) => ipcRenderer.invoke("media:prepare-photos", paths),
   filePath: (file) => webUtils.getPathForFile(file),
-  fileUrl: (path) => pathToFileURL(path).href,
+  fileUrl: (path) => toMediaUrl(path),
   newProject: () => ipcRenderer.invoke("project:new"),
   openProject: () => ipcRenderer.invoke("project:open"),
   saveProject: (project, saveAs = false) =>

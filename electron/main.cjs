@@ -1,11 +1,25 @@
-const { app, BrowserWindow, dialog, ipcMain } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, net, protocol } = require("electron");
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const crypto = require("node:crypto");
+const { pathToFileURL } = require("node:url");
 const { spawn } = require("node:child_process");
 
 let mainWindow;
 let currentProjectPath = null;
 let exportProcess = null;
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "videor-media",
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true
+    }
+  }
+]);
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -23,6 +37,40 @@ function createWindow() {
     }
   });
 
+  mainWindow.webContents.on("render-process-gone", (_event, details) => {
+    console.error("Le processus d'affichage Vidéor s'est arrêté :", details);
+  });
+  mainWindow.webContents.on("console-message", (_event, level, message) => {
+    if (level >= 2) console.error(`[renderer:${level}] ${message}`);
+  });
+  if (!app.isPackaged && process.env.VIDEOR_SMOKE_PHOTOS) {
+    mainWindow.webContents.once("did-finish-load", async () => {
+      await mainWindow.webContents.executeJavaScript(
+        "document.querySelector('.drop-zone')?.click()"
+      );
+      const deadline = Date.now() + 60000;
+      let result;
+      do {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        result = await mainWindow.webContents.executeJavaScript(`({
+          cards: document.querySelectorAll('.media-card').length,
+          clips: document.querySelectorAll('.clip').length,
+          imagesLoaded: [...document.images].filter(
+            (image) => image.complete && image.naturalWidth > 0
+          ).length,
+          imagesFailed: [...document.images].filter(
+            (image) => image.complete && image.naturalWidth === 0
+          ).length,
+          status: document.querySelector('.statusbar span')?.textContent
+        })`);
+      } while (
+        Date.now() < deadline &&
+        result.status?.startsWith("Préparation de ")
+      );
+      console.log("VIDEOR_SMOKE_RESULT", JSON.stringify(result));
+    });
+  }
+
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
@@ -31,6 +79,19 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  protocol.handle("videor-media", (request) => {
+    const filePath = new URL(request.url).searchParams.get("path");
+    if (!filePath) return new Response("Chemin média manquant", { status: 400 });
+    const extension = path.extname(filePath).toLowerCase();
+    const allowed = new Set([
+      ".jpg", ".jpeg", ".png", ".webp", ".bmp",
+      ".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac"
+    ]);
+    if (!allowed.has(extension)) {
+      return new Response("Type de média interdit", { status: 403 });
+    }
+    return net.fetch(pathToFileURL(filePath).href);
+  });
   registerIpc();
   createWindow();
   app.on("activate", () => {
@@ -44,6 +105,66 @@ app.on("window-all-closed", () => {
 
 function autosavePath() {
   return path.join(app.getPath("userData"), "autosave.videor");
+}
+
+function previewCachePath(filePath, stat) {
+  const key = crypto
+    .createHash("sha256")
+    .update(`${filePath}:${stat.size}:${stat.mtimeMs}`)
+    .digest("hex");
+  return path.join(app.getPath("userData"), "previews", `${key}.jpg`);
+}
+
+async function runCommand(command, args) {
+  return new Promise((resolve, reject) => {
+    const process = spawn(command, args);
+    let stderr = "";
+    process.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    process.on("error", reject);
+    process.on("close", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(stderr.split("\n").slice(-6).join("\n")));
+    });
+  });
+}
+
+async function preparePhoto(filePath) {
+  try {
+    const stat = await fs.stat(filePath);
+    const target = previewCachePath(filePath, stat);
+    try {
+      await fs.access(target);
+      return { path: filePath, previewPath: target, error: null };
+    } catch {
+      await fs.mkdir(path.dirname(target), { recursive: true });
+      await runCommand("ffmpeg", [
+        "-loglevel", "error",
+        "-y",
+        "-i", filePath,
+        "-vf", "scale=1920:1080:force_original_aspect_ratio=decrease",
+        "-frames:v", "1",
+        "-q:v", "3",
+        target
+      ]);
+      return { path: filePath, previewPath: target, error: null };
+    }
+  } catch (error) {
+    return {
+      path: filePath,
+      previewPath: null,
+      error: error instanceof Error ? error.message : "Image illisible"
+    };
+  }
+}
+
+async function preparePhotos(filePaths) {
+  const results = [];
+  for (const filePath of filePaths) {
+    results.push(await preparePhoto(filePath));
+  }
+  return results;
 }
 
 async function readProject(filePath) {
@@ -68,6 +189,9 @@ async function writeProject(filePath, project) {
 
 function registerIpc() {
   ipcMain.handle("media:choose-photos", async () => {
+    if (!app.isPackaged && process.env.VIDEOR_SMOKE_PHOTOS) {
+      return process.env.VIDEOR_SMOKE_PHOTOS.split(path.delimiter).filter(Boolean);
+    }
     const result = await dialog.showOpenDialog(mainWindow, {
       title: "Importer des photos",
       properties: ["openFile", "multiSelections"],
@@ -83,6 +207,11 @@ function registerIpc() {
       filters: [{ name: "Audio", extensions: ["mp3", "wav", "ogg", "m4a", "aac", "flac"] }]
     });
     return result.canceled ? null : result.filePaths[0];
+  });
+
+  ipcMain.handle("media:prepare-photos", async (_event, filePaths) => {
+    if (!Array.isArray(filePaths)) return [];
+    return preparePhotos(filePaths);
   });
 
   ipcMain.handle("project:new", () => {

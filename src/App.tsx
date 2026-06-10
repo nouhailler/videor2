@@ -38,6 +38,7 @@ import {
 type Photo = {
   id: string;
   path: string;
+  previewPath?: string | null;
   name: string;
   duration: number;
   rotation: 0 | 90 | 180 | 270;
@@ -79,6 +80,10 @@ const iconSize = 18;
 
 function basename(path: string) {
   return path.split(/[\\/]/).pop() || path;
+}
+
+function photoSource(photo: Photo) {
+  return window.videor.fileUrl(photo.previewPath || photo.path);
 }
 
 function formatTime(value: number) {
@@ -133,11 +138,8 @@ function App() {
   useEffect(() => {
     window.videor.loadAutosave().then((restored) => {
       if (!restored) return;
-      const value = restored as Project;
-      setProject(value);
-      setSelectedId(value.photos[0]?.id ?? null);
-      setMessage("Projet restauré");
-    });
+      void loadProject(restored as Project, "Projet restauré");
+    }).catch((error) => setMessage(error.message));
   }, []);
 
   useEffect(() => {
@@ -184,12 +186,16 @@ function App() {
     };
   }, [playing, project.audio, totalDuration]);
 
-  const addPhotos = useCallback((paths: string[]) => {
+  const addPhotos = useCallback(async (paths: string[]) => {
     const accepted = paths.filter((path) => /\.(jpe?g|png|webp|bmp)$/i.test(path));
     if (!accepted.length) return;
-    const photos: Photo[] = accepted.map((path) => ({
+    setMessage(`Préparation de ${accepted.length} photo${accepted.length > 1 ? "s" : ""}…`);
+    const prepared = await window.videor.preparePhotos(accepted);
+    const valid = prepared.filter((item) => item.previewPath);
+    const photos: Photo[] = valid.map(({ path, previewPath }) => ({
       id: crypto.randomUUID(),
       path,
+      previewPath,
       name: basename(path),
       duration: 5,
       rotation: 0,
@@ -197,12 +203,26 @@ function App() {
       positionX: 50,
       positionY: 50
     }));
+    if (!photos.length) {
+      setMessage("Aucune photo lisible n’a pu être importée");
+      return;
+    }
     mutateProject((value) => ({ ...value, photos: [...value.photos, ...photos] }));
     setSelectedId((value) => value || photos[0].id);
-    setMessage(`${photos.length} photo${photos.length > 1 ? "s" : ""} ajoutée${photos.length > 1 ? "s" : ""}`);
+    const rejected = prepared.length - valid.length;
+    setMessage(
+      `${photos.length} photo${photos.length > 1 ? "s" : ""} ajoutée${photos.length > 1 ? "s" : ""}` +
+      (rejected ? ` · ${rejected} fichier${rejected > 1 ? "s" : ""} ignoré${rejected > 1 ? "s" : ""}` : "")
+    );
   }, [mutateProject]);
 
-  const choosePhotos = async () => addPhotos(await window.videor.choosePhotos());
+  const choosePhotos = async () => {
+    try {
+      await addPhotos(await window.videor.choosePhotos());
+    } catch (error) {
+      setMessage(`Import impossible : ${(error as Error).message}`);
+    }
+  };
 
   const chooseAudio = async () => {
     const path = await window.videor.chooseAudio();
@@ -216,11 +236,15 @@ function App() {
     setMessage("Piste audio chargée");
   };
 
-  const handleFileDrop = (event: DragEvent) => {
+  const handleFileDrop = async (event: DragEvent) => {
     event.preventDefault();
     const paths = [...event.dataTransfer.files].map(window.videor.filePath);
     const audio = paths.find((path) => /\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(path));
-    addPhotos(paths);
+    try {
+      await addPhotos(paths);
+    } catch (error) {
+      setMessage(`Import impossible : ${(error as Error).message}`);
+    }
     if (audio) {
       mutateProject((value) => ({
         ...value,
@@ -293,9 +317,19 @@ function App() {
     });
   };
 
-  const loadProject = (value: Project, notice: string) => {
-    setProject(value);
-    setSelectedId(value.photos[0]?.id ?? null);
+  const loadProject = async (value: Project, notice: string) => {
+    setMessage("Préparation des aperçus…");
+    const prepared = await window.videor.preparePhotos(value.photos.map((photo) => photo.path));
+    const previewByPath = new Map(prepared.map((item) => [item.path, item.previewPath]));
+    const hydrated = {
+      ...value,
+      photos: value.photos.map((photo) => ({
+        ...photo,
+        previewPath: previewByPath.get(photo.path) || photo.previewPath || null
+      }))
+    };
+    setProject(hydrated);
+    setSelectedId(hydrated.photos[0]?.id ?? null);
     setCurrentTime(0);
     setPlaying(false);
     setSaved(true);
@@ -305,7 +339,7 @@ function App() {
   const openProject = async () => {
     try {
       const result = await window.videor.openProject();
-      if (result) loadProject(result.project as Project, "Projet ouvert");
+      if (result) await loadProject(result.project as Project, "Projet ouvert");
     } catch (error) {
       setMessage((error as Error).message);
     }
@@ -314,7 +348,7 @@ function App() {
   const importProject = async () => {
     try {
       const result = await window.videor.importProject();
-      if (result) loadProject(result.project as Project, "Projet importé");
+      if (result) await loadProject(result.project as Project, "Projet importé");
     } catch (error) {
       setMessage((error as Error).message);
     }
@@ -322,7 +356,7 @@ function App() {
 
   const newProject = async () => {
     await window.videor.newProject();
-    loadProject(emptyProject(), "Nouveau projet");
+    await loadProject(emptyProject(), "Nouveau projet");
   };
 
   const saveProject = async (saveAs = false) => {
@@ -419,7 +453,7 @@ function App() {
                     key={photo.id}
                     onClick={() => setSelectedId(photo.id)}
                   >
-                    <img src={window.videor.fileUrl(photo.path)} alt="" />
+                    <img src={photoSource(photo)} alt="" />
                     <span className="media-index">{index + 1}</span>
                     <span className="media-duration">{photo.duration.toFixed(1)}s</span>
                   </button>
@@ -480,7 +514,7 @@ function App() {
             <div className="player" ref={playerRef}>
               {activePhoto ? (
                 <img
-                  src={window.videor.fileUrl(activePhoto.path)}
+                  src={photoSource(activePhoto)}
                   alt=""
                   style={{
                     objectFit: activePhoto.fit,
@@ -547,7 +581,7 @@ function App() {
                     style={{ width: `${Math.max(108, photo.duration * 28)}px` }}
                   >
                     <Menu size={15} className="drag-handle" />
-                    <img src={window.videor.fileUrl(photo.path)} alt="" />
+                    <img src={photoSource(photo)} alt="" />
                     <span>{index + 1}</span>
                     <b>{photo.duration.toFixed(1)}s</b>
                   </article>
@@ -587,7 +621,7 @@ function App() {
             <div className="inspector-content">
               <div className="inspector-thumb">
                 <img
-                  src={window.videor.fileUrl(selected.path)}
+                  src={photoSource(selected)}
                   alt=""
                   style={{
                     objectFit: selected.fit,

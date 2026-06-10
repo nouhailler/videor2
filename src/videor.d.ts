@@ -5,6 +5,11 @@ declare global {
     videor: {
       choosePhotos(): Promise<string[]>;
       chooseAudio(): Promise<string | null>;
+      preparePhotos(paths: string[]): Promise<Array<{
+        path: string;
+        previewPath: string | null;
+        error: string | null;
+      }>>;
       filePath(file: File): string;
       fileUrl(path: string): string;
       newProject(): Promise<boolean>;

@@ -7,8 +7,23 @@ projet utilise le [versionnage sémantique](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté
+
+- protocole sécurisé `videor-media://` pour charger les médias locaux ;
+- génération et mise en cache d'aperçus JPEG avec FFmpeg ;
+- jeu de 30 photos haute résolution dans `test/` pour valider les imports ;
+- écran de récupération en cas d'erreur fatale de l'interface.
+
+### Modifié
+
+- préparation des aperçus lors de l'import et de l'ouverture d'un projet ;
+- poursuite d'un import lorsque certains fichiers sont illisibles ;
+- diagnostics Electron pour les erreurs du processus d'affichage.
+
 ### Prévu
 
+- tests unitaires du modèle projet, de la timeline et des commandes FFmpeg ;
+- test automatisé d'import utilisant les photos du dossier `test/` ;
 - transitions simples entre les photos ;
 - effet de mouvement Ken Burns ;
 - forme d'onde calculée depuis le fichier audio ;

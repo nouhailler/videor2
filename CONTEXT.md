@@ -12,6 +12,8 @@ nouvelle session, sans devoir reconstruire l'historique du projet.
 - **Branche principale :** `main`
 - **Format projet :** fichier JSON avec l'extension `.videor`
 - **Moteur d'export :** FFmpeg installé sur le système
+- **Chantier terminé après `0.1.0` :** fiabilisation du chargement des médias
+- **Prochaine priorité :** tests automatisés
 
 Vidéor permet de créer un montage simple à partir d'une suite de photos et
 d'une piste audio. L'objectif est de couvrir les besoins essentiels sans
@@ -32,6 +34,10 @@ Kdenlive.
 
 - import multiple avec le sélecteur de fichiers ;
 - glisser-déposer depuis le bureau ;
+- génération d'aperçus JPEG normalisés avec FFmpeg ;
+- mise en cache des aperçus selon le chemin, la taille et la date du fichier ;
+- chargement sécurisé des médias locaux via le protocole `videor-media://` ;
+- signalement des fichiers illisibles sans bloquer le reste de l'import ;
 - réorganisation dans la timeline ;
 - réglage individuel de la durée ;
 - rotation à gauche ou à droite ;
@@ -75,6 +81,9 @@ src/styles.css
 build/icon.png
   Icône Linux utilisée par la fenêtre et les paquets.
 
+test/
+  Jeu de 30 photos JPEG Nikon 3648 × 2736 utilisé pour les tests d'import.
+
 stitch/
   Prototype initial, captures et DESIGN.md de référence.
 ```
@@ -104,6 +113,10 @@ Les fichiers `.videor` référencent les médias par leur chemin absolu. Ils ne
 contiennent pas encore les médias eux-mêmes. Un projet peut donc perdre ses
 liens si les fichiers sont déplacés.
 
+Le champ interne optionnel `previewPath` est recalculé lors de l'import ou de
+l'ouverture d'un projet. Les aperçus sont stockés dans le dossier de données
+utilisateur d'Electron et ne remplacent pas les médias d'origine.
+
 ## Commandes utiles
 
 ```bash
@@ -131,11 +144,13 @@ l'accélération matérielle du GPU et ne bloquent pas Electron.
 Après une modification :
 
 1. exécuter `npm run build` ;
-2. lancer `npm run dev` ;
-3. importer plusieurs photos de formats et orientations différents ;
-4. tester lecture, déplacement, rotation et recadrage ;
-5. exporter un MP4 court avec audio ;
-6. vérifier le résultat avec `ffprobe`.
+2. exécuter `npm test` dès que les tests concernés existent ;
+3. lancer `npm run dev` ;
+4. importer les 30 photos du dossier `test/` ;
+5. vérifier que les 30 cartes, clips et aperçus sont chargés ;
+6. tester lecture, déplacement, rotation et recadrage ;
+7. exporter un MP4 court avec audio ;
+8. vérifier le résultat avec `ffprobe`.
 
 Pour une release Linux :
 
@@ -158,12 +173,33 @@ Pour une release Linux :
 
 ## Prochaines priorités
 
-1. calculer une vraie forme d'onde audio ;
-2. ajouter des transitions simples ;
-3. gérer un effet Ken Burns configurable ;
-4. rendre les projets portables avec copie des médias ;
-5. ajouter des tests du modèle projet et de la commande FFmpeg ;
-6. améliorer les messages d'erreur lorsque des médias sont introuvables.
+1. ajouter des tests unitaires du modèle projet et des calculs de timeline ;
+2. tester la préparation des aperçus et la construction des commandes FFmpeg ;
+3. automatiser un test d'import avec les photos du dossier `test/` ;
+4. tester l'ouverture, la sauvegarde et la restauration des projets ;
+5. calculer une vraie forme d'onde audio ;
+6. ajouter des transitions simples et un effet Ken Burns configurable ;
+7. rendre les projets portables avec copie des médias.
+
+## Dernier chantier : chargement des médias
+
+Le correctif postérieur à `0.1.0` répond aux échecs d'affichage rencontrés avec
+des photos locales volumineuses :
+
+- Electron expose désormais les médias autorisés via `videor-media://` plutôt
+  que par des URL `file://` directes ;
+- FFmpeg génère un aperçu JPEG limité à 1920 × 1080 pour chaque photo ;
+- les aperçus sont réutilisés tant que le fichier source ne change pas ;
+- les projets existants sont réhydratés avec leurs aperçus à l'ouverture ;
+- une photo illisible est ignorée avec un message utilisateur ;
+- un écran de récupération s'affiche en cas d'erreur React fatale ;
+- des diagnostics du processus d'affichage facilitent les prochains tests.
+
+Le build TypeScript/Vite passe. Un smoke test Electron dans un profil vierge a
+chargé les 30 photos du dossier `test/`, créé 30 cartes et 30 clips, sans aucun
+aperçu en échec. La prochaine étape consiste à extraire les fonctions testables
+des processus Electron et React, puis à couvrir ce comportement avec Vitest et
+un test d'intégration d'import.
 
 ## Conventions
 

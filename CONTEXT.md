@@ -12,7 +12,8 @@ nouvelle session, sans devoir reconstruire l'historique du projet.
 - **Branche principale :** `main`
 - **Format projet :** fichier JSON avec l'extension `.videor`
 - **Moteur d'export :** FFmpeg installé sur le système
-- **Chantier terminé après `0.1.0` :** fiabilisation du chargement des médias
+- **Chantiers terminés après `0.1.0` :** chargement des médias et intégration
+  desktop Linux
 - **Prochaine priorité :** tests automatisés
 
 Vidéor permet de créer un montage simple à partir d'une suite de photos et
@@ -79,7 +80,13 @@ src/styles.css
   Mise en page desktop et design system sombre.
 
 build/icon.png
-  Icône Linux utilisée par la fenêtre et les paquets.
+  Icône source 1024 × 1024 utilisée par la fenêtre.
+
+build/icons/
+  Déclinaisons PNG Linux de 16 à 1024 pixels installées par le paquet.
+
+build/deb-after-*.sh
+  Rafraîchissement des caches d'icônes et de lanceurs Debian.
 
 test/
   Jeu de 30 photos JPEG Nikon 3648 × 2736 utilisé pour les tests d'import.
@@ -124,6 +131,7 @@ npm install
 npm run dev
 npm run build
 npm start
+npm run package:deb
 npm run package:linux
 ```
 
@@ -200,6 +208,19 @@ chargé les 30 photos du dossier `test/`, créé 30 cartes et 30 clips, sans auc
 aperçu en échec. La prochaine étape consiste à extraire les fonctions testables
 des processus Electron et React, puis à couvrir ce comportement avec Vitest et
 un test d'intégration d'import.
+
+## Intégration desktop Linux
+
+Le paquet Debian installe un lanceur dans
+`/usr/share/applications/videor.desktop`. Celui-ci référence l'icône par son
+nom de thème, `videor`, et non par un chemin propre à une machine.
+
+Le premier paquet `0.1.0` ne fournissait que la taille 1024 × 1024. Certains
+environnements de bureau ne l'affichaient donc pas. Le packaging utilise
+désormais les tailles 16, 32, 48, 64, 128, 256, 512 et 1024 pixels sous
+`/usr/share/icons/hicolor/<taille>/apps/videor.png`. Les scripts Debian
+rafraîchissent également `hicolor` et la base des fichiers desktop après une
+installation, une mise à jour ou une suppression.
 
 ## Conventions
 

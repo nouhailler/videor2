@@ -16,6 +16,7 @@
     "build": "tsc --noEmit && vite build",
     "start": "electron .",
     "test": "vitest run",
+    "package:deb": "npm run build && electron-builder --linux deb",
     "package:linux": "npm run build && electron-builder --linux AppImage deb"
   },
   "dependencies": {},
@@ -47,10 +48,21 @@
       "package.json"
     ],
     "linux": {
-      "icon": "build/icon.png",
+      "icon": "build/icons",
       "target": ["AppImage", "deb"],
       "category": "AudioVideo",
-      "artifactName": "Videor-${version}-${arch}.${ext}"
+      "artifactName": "Videor-${version}-${arch}.${ext}",
+      "desktop": {
+        "Name": "Vidéor",
+        "Comment": "Créer des vidéos à partir de photos et d'une piste audio",
+        "Icon": "videor",
+        "StartupWMClass": "Vidéor",
+        "Keywords": "video;photo;audio;diaporama;montage;"
+      }
+    },
+    "deb": {
+      "afterInstall": "build/deb-after-install.sh",
+      "afterRemove": "build/deb-after-remove.sh"
     }
   }
 }

@@ -12,13 +12,16 @@ projet utilise le [versionnage sémantique](https://semver.org/lang/fr/).
 - protocole sécurisé `videor-media://` pour charger les médias locaux ;
 - génération et mise en cache d'aperçus JPEG avec FFmpeg ;
 - jeu de 30 photos haute résolution dans `test/` pour valider les imports ;
-- écran de récupération en cas d'erreur fatale de l'interface.
+- écran de récupération en cas d'erreur fatale de l'interface ;
+- icônes Linux aux tailles standard de 16 à 1024 pixels.
 
 ### Modifié
 
 - préparation des aperçus lors de l'import et de l'ouverture d'un projet ;
 - poursuite d'un import lorsque certains fichiers sont illisibles ;
-- diagnostics Electron pour les erreurs du processus d'affichage.
+- diagnostics Electron pour les erreurs du processus d'affichage ;
+- paquet Debian avec lanceur desktop explicite et rafraîchissement du cache
+  d'icônes lors de l'installation et de la suppression.
 
 ### Prévu
 

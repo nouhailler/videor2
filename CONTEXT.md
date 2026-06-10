@@ -5,15 +5,14 @@ nouvelle session, sans devoir reconstruire l'historique du projet.
 
 ## Situation actuelle
 
-- **Version :** `0.2.0`
+- **Version :** `0.2.1`
 - **Statut :** MVP fonctionnel
 - **Plateforme ciblée :** Linux desktop uniquement
 - **Dépôt :** <https://github.com/nouhailler/videor2>
 - **Branche principale :** `main`
 - **Format projet :** fichier JSON avec l'extension `.videor`
 - **Moteur d'export :** FFmpeg installé sur le système
-- **Dernière release :** `0.2.0`, avec chargement des médias fiabilisé,
-  intégration desktop Linux et découpe vidéo
+- **Dernière release :** `0.2.1`, correctif de lecture de l'aperçu vidéo
 - **Prochaine priorité :** tests d'intégration de l'export FFmpeg
 
 Vidéor permet de créer un montage simple à partir d'une suite de photos et
@@ -191,10 +190,10 @@ Pour une release Linux :
 5. créer le tag Git correspondant ;
 6. joindre les artefacts à la release GitHub.
 
-La release `0.2.0` est destinée aux tests utilisateurs du mode découpe vidéo.
-Son artefact principal est `release/Videor-0.2.0-amd64.deb`.
+La release `0.2.1` corrige le bouton Play du mode découpe vidéo.
+Son artefact principal est `release/Videor-0.2.1-amd64.deb`.
 
-Validation de l'artefact `0.2.0` :
+Validation de l'artefact `0.2.1` :
 
 - les 6 tests Vitest passent ;
 - le build TypeScript/Vite passe ;
@@ -202,7 +201,7 @@ Validation de l'artefact `0.2.0` :
 - le lanceur desktop et les scripts `postinst`/`postrm` sont valides ;
 - les 8 tailles d'icône sont incluses ;
 - l'application packagée démarre avec le rendu logiciel Linux ;
-- SHA-256 : `5d06edcb0c8362fd6adc4c34e7308229818ca1e70ee08428e7d266c6b5c3a435`.
+- SHA-256 : `e32d1d20a6792aef12f5a9cb2ccad034e5a6844674722d05f1608a1aed86dd30`.
 
 ## Limites connues
 
@@ -279,6 +278,19 @@ l'audio : conservation des plages 1–5 s et 8–11 s, export final mesuré à
 7 secondes en 1280 × 720 avec les pistes vidéo et audio présentes. Le smoke
 test Electron confirme également la création de la carte média, du lecteur et
 de la timeline vidéo après import.
+
+## Correctif publié : lecture de l'aperçu vidéo
+
+Le premier paquet `0.2.0` pouvait analyser une vidéo et générer sa vignette,
+mais le bouton Play ne lançait pas la lecture. Le protocole
+`videor-media://` renvoyait les fichiers sans type MIME explicite et sans gérer
+les requêtes partielles d'octets utilisées par Chromium.
+
+Le protocole fournit maintenant `Content-Type`, `Content-Length`,
+`Accept-Ranges` et `Content-Range`, avec une réponse `206` pour les plages
+demandées. Un smoke test Electron charge une vidéo MP4, clique sur Play et
+confirme que le temps de lecture avance, avec `readyState=4` et sans erreur
+média.
 
 ## Conventions
 

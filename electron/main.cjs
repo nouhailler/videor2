@@ -1,10 +1,12 @@
-const { app, BrowserWindow, dialog, ipcMain, net, protocol } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, protocol } = require("electron");
+const { createReadStream } = require("node:fs");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const crypto = require("node:crypto");
-const { pathToFileURL } = require("node:url");
 const { spawn } = require("node:child_process");
+const { Readable } = require("node:stream");
 const { buildVideoExportArgs } = require("./videoExport.cjs");
+const { contentTypeForExtension, parseByteRange } = require("./mediaProtocol.cjs");
 
 let mainWindow;
 let currentProjectPath = null;
@@ -99,6 +101,21 @@ function createWindow() {
         Date.now() < deadline &&
         (!result.videoCards || result.status?.includes("Analyse"))
       );
+      await mainWindow.webContents.executeJavaScript(
+        "document.querySelector('.play-button')?.click()"
+      );
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      result = await mainWindow.webContents.executeJavaScript(`({
+        videoCards: document.querySelectorAll('.video-card').length,
+        videoPlayers: document.querySelectorAll('.player video').length,
+        videoTracks: document.querySelectorAll('.video-track').length,
+        currentTime: document.querySelector('.player video')?.currentTime,
+        paused: document.querySelector('.player video')?.paused,
+        readyState: document.querySelector('.player video')?.readyState,
+        networkState: document.querySelector('.player video')?.networkState,
+        mediaError: document.querySelector('.player video')?.error?.message || null,
+        status: document.querySelector('.statusbar span')?.textContent
+      })`);
       console.log("VIDEOR_VIDEO_SMOKE_RESULT", JSON.stringify(result));
     });
   }
@@ -111,19 +128,50 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  protocol.handle("videor-media", (request) => {
+  protocol.handle("videor-media", async (request) => {
     const filePath = new URL(request.url).searchParams.get("path");
     if (!filePath) return new Response("Chemin média manquant", { status: 400 });
     const extension = path.extname(filePath).toLowerCase();
-    const allowed = new Set([
-      ".jpg", ".jpeg", ".png", ".webp", ".bmp",
-      ".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac",
-      ".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v"
-    ]);
-    if (!allowed.has(extension)) {
+    const contentType = contentTypeForExtension(extension);
+    if (!contentType) {
       return new Response("Type de média interdit", { status: 403 });
     }
-    return net.fetch(pathToFileURL(filePath).href);
+    try {
+      const stat = await fs.stat(filePath);
+      const rangeHeader = request.headers.get("range");
+      const headers = {
+        "Accept-Ranges": "bytes",
+        "Content-Type": contentType
+      };
+
+      if (rangeHeader) {
+        const range = parseByteRange(rangeHeader, stat.size);
+        if (!range) {
+          return new Response(null, {
+            status: 416,
+            headers: { "Content-Range": `bytes */${stat.size}` }
+          });
+        }
+        const { start, end } = range;
+        const stream = Readable.toWeb(createReadStream(filePath, { start, end }));
+        return new Response(stream, {
+          status: 206,
+          headers: {
+            ...headers,
+            "Content-Length": String(end - start + 1),
+            "Content-Range": `bytes ${start}-${end}/${stat.size}`
+          }
+        });
+      }
+
+      const stream = Readable.toWeb(createReadStream(filePath));
+      return new Response(stream, {
+        status: 200,
+        headers: { ...headers, "Content-Length": String(stat.size) }
+      });
+    } catch {
+      return new Response("Média introuvable", { status: 404 });
+    }
   });
   registerIpc();
   createWindow();

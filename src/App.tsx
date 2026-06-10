@@ -426,8 +426,14 @@ function App() {
     playbackStartRef.current = { wallTime: performance.now(), mediaTime: currentTime };
     if (project.video && videoRef.current) {
       videoRef.current.currentTime = editedTimeToSource(project.video, currentTime);
-      await videoRef.current.play();
-      setPlaying(true);
+      try {
+        await videoRef.current.play();
+        setPlaying(true);
+        setMessage("Lecture de la vidéo");
+      } catch (error) {
+        setPlaying(false);
+        setMessage(`Lecture impossible : ${(error as Error).message}`);
+      }
       return;
     }
     if (project.audio && audioRef.current) {

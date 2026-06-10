@@ -15,6 +15,13 @@ projet utilise le [versionnage sémantique](https://semver.org/lang/fr/).
 - forme d'onde calculée depuis le fichier audio ;
 - projets portables avec médias embarqués.
 
+## [0.2.1] - 2026-06-10
+
+### Corrigé
+
+- lecture des vidéos locales dans l'aperçu grâce au type MIME et aux requêtes
+  partielles `Range` prises en charge par le protocole `videor-media://`.
+
 ## [0.2.0] - 2026-06-10
 
 ### Ajouté
@@ -60,6 +67,7 @@ projet utilise le [versionnage sémantique](https://semver.org/lang/fr/).
 - icône Linux et configuration des paquets AppImage et DEB ;
 - documentation de démarrage et contexte de développement.
 
-[Non publié]: https://github.com/nouhailler/videor2/compare/v0.2.0...HEAD
+[Non publié]: https://github.com/nouhailler/videor2/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/nouhailler/videor2/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/nouhailler/videor2/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/nouhailler/videor2/releases/tag/v0.1.0

@@ -10,6 +10,10 @@ let mainWindow;
 let currentProjectPath = null;
 let exportProcess = null;
 
+if (process.platform === "linux") {
+  app.disableHardwareAcceleration();
+}
+
 protocol.registerSchemesAsPrivileged([
   {
     scheme: "videor-media",

@@ -7,6 +7,16 @@ projet utilise le [versionnage sémantique](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Prévu
+
+- tests automatisés de l'interface Electron et de l'export FFmpeg ;
+- transitions simples entre les photos ;
+- effet de mouvement Ken Burns ;
+- forme d'onde calculée depuis le fichier audio ;
+- projets portables avec médias embarqués.
+
+## [0.2.0] - 2026-06-10
+
 ### Ajouté
 
 - import d'une vidéo MP4, MOV, MKV, WebM, AVI ou M4V ;
@@ -23,6 +33,7 @@ projet utilise le [versionnage sémantique](https://semver.org/lang/fr/).
 
 ### Modifié
 
+- rendu logiciel forcé sous Linux pour éviter les plantages liés à VA-API ;
 - format projet étendu avec une vidéo source et ses repères de coupe ;
 - médiathèque, timeline et inspecteur adaptés au mode vidéo ;
 - préparation des aperçus lors de l'import et de l'ouverture d'un projet ;
@@ -30,16 +41,6 @@ projet utilise le [versionnage sémantique](https://semver.org/lang/fr/).
 - diagnostics Electron pour les erreurs du processus d'affichage ;
 - paquet Debian avec lanceur desktop explicite et rafraîchissement du cache
   d'icônes lors de l'installation et de la suppression.
-
-### Prévu
-
-- tests unitaires du modèle projet, de la timeline et des commandes FFmpeg ;
-- test automatisé d'import utilisant les photos du dossier `test/` ;
-- transitions simples entre les photos ;
-- effet de mouvement Ken Burns ;
-- forme d'onde calculée depuis le fichier audio ;
-- projets portables avec médias embarqués ;
-- tests automatisés.
 
 ## [0.1.0] - 2026-06-08
 
@@ -59,5 +60,6 @@ projet utilise le [versionnage sémantique](https://semver.org/lang/fr/).
 - icône Linux et configuration des paquets AppImage et DEB ;
 - documentation de démarrage et contexte de développement.
 
-[Non publié]: https://github.com/nouhailler/videor2/compare/v0.1.0...HEAD
+[Non publié]: https://github.com/nouhailler/videor2/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/nouhailler/videor2/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/nouhailler/videor2/releases/tag/v0.1.0

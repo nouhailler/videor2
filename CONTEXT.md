@@ -5,15 +5,15 @@ nouvelle session, sans devoir reconstruire l'historique du projet.
 
 ## Situation actuelle
 
-- **Version :** `0.1.0`
+- **Version :** `0.2.0`
 - **Statut :** MVP fonctionnel
 - **Plateforme ciblée :** Linux desktop uniquement
 - **Dépôt :** <https://github.com/nouhailler/videor2>
 - **Branche principale :** `main`
 - **Format projet :** fichier JSON avec l'extension `.videor`
 - **Moteur d'export :** FFmpeg installé sur le système
-- **Chantiers terminés après `0.1.0` :** chargement des médias, intégration
-  desktop Linux et découpe vidéo
+- **Dernière release :** `0.2.0`, avec chargement des médias fiabilisé,
+  intégration desktop Linux et découpe vidéo
 - **Prochaine priorité :** tests d'intégration de l'export FFmpeg
 
 Vidéor permet de créer un montage simple à partir d'une suite de photos et
@@ -165,8 +165,9 @@ ffmpeg -version
 ffprobe -version
 ```
 
-Les messages VA-API tels que `libva error` sont généralement liés à
-l'accélération matérielle du GPU et ne bloquent pas Electron.
+L'accélération matérielle est désactivée sous Linux pour éviter les plantages
+du processus GPU observés avec certains pilotes VA-API ou environnements
+virtuels. Electron utilise donc un rendu logiciel stable.
 
 ## Vérifications recommandées
 
@@ -190,6 +191,19 @@ Pour une release Linux :
 5. créer le tag Git correspondant ;
 6. joindre les artefacts à la release GitHub.
 
+La release `0.2.0` est destinée aux tests utilisateurs du mode découpe vidéo.
+Son artefact principal est `release/Videor-0.2.0-amd64.deb`.
+
+Validation de l'artefact `0.2.0` :
+
+- les 6 tests Vitest passent ;
+- le build TypeScript/Vite passe ;
+- le paquet déclare bien la version Debian `0.2.0` ;
+- le lanceur desktop et les scripts `postinst`/`postrm` sont valides ;
+- les 8 tailles d'icône sont incluses ;
+- l'application packagée démarre avec le rendu logiciel Linux ;
+- SHA-256 : `5d06edcb0c8362fd6adc4c34e7308229818ca1e70ee08428e7d266c6b5c3a435`.
+
 ## Limites connues
 
 - les médias ne sont pas intégrés au fichier projet ;
@@ -211,7 +225,7 @@ Pour une release Linux :
 6. ajouter des transitions simples et un effet Ken Burns configurable ;
 7. rendre les projets portables avec copie des médias.
 
-## Dernier chantier : chargement des médias
+## Chantier publié : chargement des médias
 
 Le correctif postérieur à `0.1.0` répond aux échecs d'affichage rencontrés avec
 des photos locales volumineuses :
@@ -244,7 +258,7 @@ désormais les tailles 16, 32, 48, 64, 128, 256, 512 et 1024 pixels sous
 rafraîchissent également `hicolor` et la base des fichiers desktop après une
 installation, une mise à jour ou une suppression.
 
-## Dernier chantier : découpe vidéo
+## Chantier publié : découpe vidéo
 
 Le projet peut maintenant fonctionner dans deux modes exclusifs :
 

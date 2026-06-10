@@ -1,8 +1,8 @@
 {
   "name": "videor",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Éditeur de diaporamas vidéo simple pour Linux",
+  "description": "Éditeur vidéo simple pour photos, audio et découpe sur Linux",
   "author": {
     "name": "Patrick Nouhailler",
     "email": "patrick.nouhailler@gmail.com"
@@ -54,7 +54,7 @@
       "artifactName": "Videor-${version}-${arch}.${ext}",
       "desktop": {
         "Name": "Vidéor",
-        "Comment": "Créer des vidéos à partir de photos et d'une piste audio",
+        "Comment": "Créer des montages photo et découper des vidéos simplement",
         "Icon": "videor",
         "StartupWMClass": "Vidéor",
         "Keywords": "video;photo;audio;diaporama;montage;"

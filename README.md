@@ -137,8 +137,8 @@ Les paquets sont générés dans le dossier `release/` :
 
 ```text
 release/
-├── Videor-0.1.0-x64.AppImage
-└── Videor-0.1.0-amd64.deb
+├── Videor-0.2.0-x64.AppImage
+└── Videor-0.2.0-amd64.deb
 ```
 
 ## 🏗️ Architecture

@@ -4,6 +4,7 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const { pathToFileURL } = require("node:url");
 const { spawn } = require("node:child_process");
+const { buildVideoExportArgs } = require("./videoExport.cjs");
 
 let mainWindow;
 let currentProjectPath = null;
@@ -69,6 +70,33 @@ function createWindow() {
       );
       console.log("VIDEOR_SMOKE_RESULT", JSON.stringify(result));
     });
+  } else if (!app.isPackaged && process.env.VIDEOR_SMOKE_VIDEO) {
+    mainWindow.webContents.once("did-finish-load", async () => {
+      await mainWindow.webContents.executeJavaScript(`
+        [...document.querySelectorAll('.tabs button')]
+          .find((button) => button.textContent.includes('Vidéo'))?.click();
+      `);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await mainWindow.webContents.executeJavaScript(`
+        [...document.querySelectorAll('.library-content button')]
+          .find((button) => button.textContent.includes('Charger une vidéo'))?.click();
+      `);
+      const deadline = Date.now() + 30000;
+      let result;
+      do {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        result = await mainWindow.webContents.executeJavaScript(`({
+          videoCards: document.querySelectorAll('.video-card').length,
+          videoPlayers: document.querySelectorAll('.player video').length,
+          videoTracks: document.querySelectorAll('.video-track').length,
+          status: document.querySelector('.statusbar span')?.textContent
+        })`);
+      } while (
+        Date.now() < deadline &&
+        (!result.videoCards || result.status?.includes("Analyse"))
+      );
+      console.log("VIDEOR_VIDEO_SMOKE_RESULT", JSON.stringify(result));
+    });
   }
 
   if (process.env.VITE_DEV_SERVER_URL) {
@@ -85,7 +113,8 @@ app.whenReady().then(() => {
     const extension = path.extname(filePath).toLowerCase();
     const allowed = new Set([
       ".jpg", ".jpeg", ".png", ".webp", ".bmp",
-      ".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac"
+      ".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac",
+      ".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v"
     ]);
     if (!allowed.has(extension)) {
       return new Response("Type de média interdit", { status: 403 });
@@ -107,12 +136,12 @@ function autosavePath() {
   return path.join(app.getPath("userData"), "autosave.videor");
 }
 
-function previewCachePath(filePath, stat) {
+function previewCachePath(filePath, stat, suffix = "") {
   const key = crypto
     .createHash("sha256")
     .update(`${filePath}:${stat.size}:${stat.mtimeMs}`)
     .digest("hex");
-  return path.join(app.getPath("userData"), "previews", `${key}.jpg`);
+  return path.join(app.getPath("userData"), "previews", `${key}${suffix}.jpg`);
 }
 
 async function runCommand(command, args) {
@@ -125,6 +154,25 @@ async function runCommand(command, args) {
     process.on("error", reject);
     process.on("close", (code) => {
       if (code === 0) resolve();
+      else reject(new Error(stderr.split("\n").slice(-6).join("\n")));
+    });
+  });
+}
+
+async function runCommandWithOutput(command, args) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args);
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) resolve(stdout);
       else reject(new Error(stderr.split("\n").slice(-6).join("\n")));
     });
   });
@@ -165,6 +213,61 @@ async function preparePhotos(filePaths) {
     results.push(await preparePhoto(filePath));
   }
   return results;
+}
+
+async function prepareVideo(filePath) {
+  try {
+    const stat = await fs.stat(filePath);
+    const probeOutput = await runCommandWithOutput("ffprobe", [
+      "-v", "error",
+      "-show_entries", "format=duration:stream=index,codec_type,width,height",
+      "-of", "json",
+      filePath
+    ]);
+    const probe = JSON.parse(probeOutput);
+    const videoStream = probe.streams?.find((stream) => stream.codec_type === "video");
+    const duration = Number(probe.format?.duration);
+    if (!videoStream || !Number.isFinite(duration) || duration <= 0) {
+      throw new Error("Aucune piste vidéo exploitable");
+    }
+
+    const previewPath = previewCachePath(filePath, stat, "-video");
+    try {
+      await fs.access(previewPath);
+    } catch {
+      await fs.mkdir(path.dirname(previewPath), { recursive: true });
+      await runCommand("ffmpeg", [
+        "-loglevel", "error",
+        "-y",
+        "-ss", String(Math.min(duration / 2, 5)),
+        "-i", filePath,
+        "-vf", "scale=960:540:force_original_aspect_ratio=decrease",
+        "-frames:v", "1",
+        "-q:v", "3",
+        previewPath
+      ]);
+    }
+
+    return {
+      path: filePath,
+      previewPath,
+      duration,
+      width: Number(videoStream.width) || 0,
+      height: Number(videoStream.height) || 0,
+      hasAudio: probe.streams?.some((stream) => stream.codec_type === "audio") || false,
+      error: null
+    };
+  } catch (error) {
+    return {
+      path: filePath,
+      previewPath: null,
+      duration: 0,
+      width: 0,
+      height: 0,
+      hasAudio: false,
+      error: error instanceof Error ? error.message : "Vidéo illisible"
+    };
+  }
 }
 
 async function readProject(filePath) {
@@ -209,9 +312,26 @@ function registerIpc() {
     return result.canceled ? null : result.filePaths[0];
   });
 
+  ipcMain.handle("media:choose-video", async () => {
+    if (!app.isPackaged && process.env.VIDEOR_SMOKE_VIDEO) {
+      return process.env.VIDEOR_SMOKE_VIDEO;
+    }
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: "Choisir une vidéo",
+      properties: ["openFile"],
+      filters: [{ name: "Vidéo", extensions: ["mp4", "mov", "mkv", "webm", "avi", "m4v"] }]
+    });
+    return result.canceled ? null : result.filePaths[0];
+  });
+
   ipcMain.handle("media:prepare-photos", async (_event, filePaths) => {
     if (!Array.isArray(filePaths)) return [];
     return preparePhotos(filePaths);
+  });
+
+  ipcMain.handle("media:prepare-video", async (_event, filePath) => {
+    if (typeof filePath !== "string" || !filePath) return null;
+    return prepareVideo(filePath);
   });
 
   ipcMain.handle("project:new", () => {
@@ -287,7 +407,9 @@ function registerIpc() {
   });
 
   ipcMain.handle("video:export", async (_event, project, options) => {
-    if (!project.photos.length) throw new Error("Ajoutez au moins une photo avant l'export.");
+    if (!project.photos.length && !project.video) {
+      throw new Error("Ajoutez des photos ou une vidéo avant l'export.");
+    }
     const extension = options.format === "webm" ? "webm" : "mp4";
     const result = await dialog.showSaveDialog(mainWindow, {
       title: "Exporter la vidéo",
@@ -301,6 +423,9 @@ function registerIpc() {
 }
 
 function runFfmpeg(project, options, outputPath) {
+  if (project.video) {
+    return runVideoFfmpeg(project.video, options, outputPath);
+  }
   return new Promise((resolve, reject) => {
     const dimensions = {
       "720p": [1280, 720],
@@ -361,6 +486,45 @@ function runFfmpeg(project, options, outputPath) {
       if (match && mainWindow) {
         const seconds = Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]);
         mainWindow.webContents.send("video:progress", Math.min(99, Math.round((seconds / totalDuration) * 100)));
+      }
+    });
+    exportProcess.on("error", reject);
+    exportProcess.on("close", (code, signal) => {
+      exportProcess = null;
+      if (code === 0) {
+        mainWindow?.webContents.send("video:progress", 100);
+        resolve();
+      } else if (signal) {
+        reject(new Error("Export annulé."));
+      } else {
+        reject(new Error(stderr.split("\n").slice(-8).join("\n") || "Échec de FFmpeg."));
+      }
+    });
+  });
+}
+
+function runVideoFfmpeg(video, options, outputPath) {
+  return new Promise((resolve, reject) => {
+    let exportConfig;
+    try {
+      exportConfig = buildVideoExportArgs(video, options, outputPath);
+    } catch (error) {
+      reject(new Error("Les coupes suppriment toute la vidéo."));
+      return;
+    }
+    const { args, totalDuration } = exportConfig;
+    exportProcess = spawn("ffmpeg", args);
+    let stderr = "";
+    exportProcess.stderr.on("data", (chunk) => {
+      const text = chunk.toString();
+      stderr += text;
+      const match = text.match(/time=(\d+):(\d+):([\d.]+)/);
+      if (match && mainWindow) {
+        const seconds = Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]);
+        mainWindow.webContents.send(
+          "video:progress",
+          Math.min(99, Math.round((seconds / totalDuration) * 100))
+        );
       }
     });
     exportProcess.on("error", reject);

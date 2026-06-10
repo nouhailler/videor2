@@ -7,7 +7,9 @@ function toMediaUrl(filePath) {
 contextBridge.exposeInMainWorld("videor", {
   choosePhotos: () => ipcRenderer.invoke("media:choose-photos"),
   chooseAudio: () => ipcRenderer.invoke("media:choose-audio"),
+  chooseVideo: () => ipcRenderer.invoke("media:choose-video"),
   preparePhotos: (paths) => ipcRenderer.invoke("media:prepare-photos", paths),
+  prepareVideo: (path) => ipcRenderer.invoke("media:prepare-video", path),
   filePath: (file) => webUtils.getPathForFile(file),
   fileUrl: (path) => toMediaUrl(path),
   newProject: () => ipcRenderer.invoke("project:new"),

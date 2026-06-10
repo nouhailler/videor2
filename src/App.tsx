@@ -8,6 +8,7 @@ import {
   FileDown,
   FilePlus2,
   FileUp,
+  Film,
   FolderOpen,
   ImagePlus,
   Images,
@@ -19,9 +20,11 @@ import {
   RotateCcw,
   RotateCw,
   Save,
+  Scissors,
   Settings,
   Trash2,
   Upload,
+  Undo2,
   Volume2,
   X
 } from "lucide-react";
@@ -34,6 +37,14 @@ import {
   useRef,
   useState
 } from "react";
+import {
+  editedTimeToSource,
+  editedVideoDuration,
+  normalizeVideoEdits,
+  segmentAtSourceTime,
+  sourceTimeToEdited,
+  TimeRange
+} from "./videoEditing";
 
 type Photo = {
   id: string;
@@ -54,12 +65,26 @@ type AudioTrack = {
   volume: number;
 };
 
+type VideoSource = {
+  path: string;
+  previewPath: string | null;
+  name: string;
+  duration: number;
+  width: number;
+  height: number;
+  hasAudio: boolean;
+  trimStart: number;
+  trimEnd: number;
+  cuts: TimeRange[];
+};
+
 type Project = {
   format: "videor-project";
   version: 1;
   name: string;
   photos: Photo[];
   audio: AudioTrack | null;
+  video: VideoSource | null;
   updatedAt?: string;
 };
 
@@ -73,7 +98,8 @@ const emptyProject = (): Project => ({
   version: 1,
   name: "Mon projet",
   photos: [],
-  audio: null
+  audio: null,
+  video: null
 });
 
 const iconSize = 18;
@@ -91,6 +117,13 @@ function formatTime(value: number) {
   const minutes = Math.floor(safe / 60);
   const seconds = Math.floor(safe % 60);
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function formatPreciseTime(value: number) {
+  const safe = Number.isFinite(value) ? Math.max(0, value) : 0;
+  const minutes = Math.floor(safe / 60);
+  const seconds = safe % 60;
+  return `${String(minutes).padStart(2, "0")}:${seconds.toFixed(1).padStart(4, "0")}`;
 }
 
 function photoAtTime(photos: Photo[], time: number) {
@@ -116,19 +149,26 @@ function App() {
     resolution: "1080p"
   });
   const [exportProgress, setExportProgress] = useState<number | null>(null);
-  const [libraryTab, setLibraryTab] = useState<"photos" | "audio">("photos");
+  const [libraryTab, setLibraryTab] = useState<"photos" | "video" | "audio">("photos");
+  const [cutStartSource, setCutStartSource] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const playerRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number | null>(null);
   const playbackStartRef = useRef({ wallTime: 0, mediaTime: 0 });
 
   const totalDuration = useMemo(
-    () => project.photos.reduce((sum, photo) => sum + photo.duration, 0),
-    [project.photos]
+    () => project.video
+      ? editedVideoDuration(project.video)
+      : project.photos.reduce((sum, photo) => sum + photo.duration, 0),
+    [project.photos, project.video]
   );
   const selected = project.photos.find((photo) => photo.id === selectedId) || null;
   const activeIndex = project.photos.length ? photoAtTime(project.photos, currentTime) : -1;
   const activePhoto = activeIndex >= 0 ? project.photos[activeIndex] : null;
+  const sourceTime = project.video
+    ? editedTimeToSource(project.video, currentTime)
+    : currentTime;
 
   const mutateProject = useCallback((mutator: (value: Project) => Project) => {
     setProject((value) => mutator(value));
@@ -166,6 +206,34 @@ function App() {
       return;
     }
     const update = () => {
+      const video = videoRef.current;
+      if (project.video && video) {
+        const position = segmentAtSourceTime(project.video, video.currentTime);
+        if (!position.segment) {
+          if (position.next) {
+            video.currentTime = position.next.start;
+            animationRef.current = requestAnimationFrame(update);
+            return;
+          }
+          setCurrentTime(totalDuration);
+          setPlaying(false);
+          video.pause();
+          return;
+        }
+        if (video.currentTime >= position.segment.end - 0.03) {
+          if (position.next) {
+            video.currentTime = position.next.start;
+          } else {
+            setCurrentTime(totalDuration);
+            setPlaying(false);
+            video.pause();
+            return;
+          }
+        }
+        setCurrentTime(sourceTimeToEdited(project.video, video.currentTime));
+        animationRef.current = requestAnimationFrame(update);
+        return;
+      }
       const audio = audioRef.current;
       const next = project.audio && audio
         ? audio.currentTime
@@ -184,7 +252,7 @@ function App() {
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [playing, project.audio, totalDuration]);
+  }, [playing, project.audio, project.video, totalDuration]);
 
   const addPhotos = useCallback(async (paths: string[]) => {
     const accepted = paths.filter((path) => /\.(jpe?g|png|webp|bmp)$/i.test(path));
@@ -207,7 +275,11 @@ function App() {
       setMessage("Aucune photo lisible n’a pu être importée");
       return;
     }
-    mutateProject((value) => ({ ...value, photos: [...value.photos, ...photos] }));
+    mutateProject((value) => ({
+      ...value,
+      video: null,
+      photos: [...value.photos, ...photos]
+    }));
     setSelectedId((value) => value || photos[0].id);
     const rejected = prepared.length - valid.length;
     setMessage(
@@ -236,10 +308,60 @@ function App() {
     setMessage("Piste audio chargée");
   };
 
+  const importVideo = useCallback(async (path: string) => {
+    setMessage("Analyse de la vidéo…");
+    const prepared = await window.videor.prepareVideo(path);
+    if (!prepared || prepared.error || !prepared.previewPath) {
+      throw new Error(prepared?.error || "Vidéo illisible");
+    }
+    const video: VideoSource = {
+      path: prepared.path,
+      previewPath: prepared.previewPath,
+      name: basename(prepared.path),
+      duration: prepared.duration,
+      width: prepared.width,
+      height: prepared.height,
+      hasAudio: prepared.hasAudio,
+      trimStart: 0,
+      trimEnd: prepared.duration,
+      cuts: []
+    };
+    mutateProject((value) => ({
+      ...value,
+      photos: [],
+      audio: null,
+      video
+    }));
+    setSelectedId(null);
+    setLibraryTab("video");
+    setCutStartSource(null);
+    setCurrentTime(0);
+    setPlaying(false);
+    setMessage(`Vidéo chargée : ${video.name}`);
+  }, [mutateProject]);
+
+  const chooseVideo = async () => {
+    try {
+      const path = await window.videor.chooseVideo();
+      if (path) await importVideo(path);
+    } catch (error) {
+      setMessage(`Import impossible : ${(error as Error).message}`);
+    }
+  };
+
   const handleFileDrop = async (event: DragEvent) => {
     event.preventDefault();
     const paths = [...event.dataTransfer.files].map(window.videor.filePath);
     const audio = paths.find((path) => /\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(path));
+    const video = paths.find((path) => /\.(mp4|mov|mkv|webm|avi|m4v)$/i.test(path));
+    if (video) {
+      try {
+        await importVideo(video);
+      } catch (error) {
+        setMessage(`Import impossible : ${(error as Error).message}`);
+      }
+      return;
+    }
     try {
       await addPhotos(paths);
     } catch (error) {
@@ -285,19 +407,29 @@ function App() {
   const seek = (value: number) => {
     const next = Math.min(totalDuration, Math.max(0, value));
     setCurrentTime(next);
+    if (videoRef.current && project.video) {
+      videoRef.current.currentTime = editedTimeToSource(project.video, next);
+    }
     if (audioRef.current && project.audio) audioRef.current.currentTime = next;
     playbackStartRef.current = { wallTime: performance.now(), mediaTime: next };
   };
 
   const togglePlay = async () => {
-    if (!project.photos.length || totalDuration <= 0) return;
+    if ((!project.photos.length && !project.video) || totalDuration <= 0) return;
     if (playing) {
       audioRef.current?.pause();
+      videoRef.current?.pause();
       setPlaying(false);
       return;
     }
     if (currentTime >= totalDuration) seek(0);
     playbackStartRef.current = { wallTime: performance.now(), mediaTime: currentTime };
+    if (project.video && videoRef.current) {
+      videoRef.current.currentTime = editedTimeToSource(project.video, currentTime);
+      await videoRef.current.play();
+      setPlaying(true);
+      return;
+    }
     if (project.audio && audioRef.current) {
       audioRef.current.currentTime = currentTime;
       await audioRef.current.play();
@@ -319,17 +451,41 @@ function App() {
 
   const loadProject = async (value: Project, notice: string) => {
     setMessage("Préparation des aperçus…");
-    const prepared = await window.videor.preparePhotos(value.photos.map((photo) => photo.path));
-    const previewByPath = new Map(prepared.map((item) => [item.path, item.previewPath]));
-    const hydrated = {
+    const compatible = {
       ...value,
-      photos: value.photos.map((photo) => ({
+      photos: value.photos || [],
+      audio: value.audio || null,
+      video: value.video || null
+    };
+    const prepared = await window.videor.preparePhotos(compatible.photos.map((photo) => photo.path));
+    const previewByPath = new Map(prepared.map((item) => [item.path, item.previewPath]));
+    let hydratedVideo = compatible.video;
+    if (compatible.video) {
+      const videoInfo = await window.videor.prepareVideo(compatible.video.path);
+      if (videoInfo && !videoInfo.error) {
+        hydratedVideo = {
+          ...compatible.video,
+          previewPath: videoInfo.previewPath,
+          duration: videoInfo.duration,
+          width: videoInfo.width,
+          height: videoInfo.height,
+          hasAudio: videoInfo.hasAudio,
+          trimEnd: Math.min(compatible.video.trimEnd ?? videoInfo.duration, videoInfo.duration)
+        };
+      }
+    }
+    const hydrated: Project = {
+      ...compatible,
+      video: hydratedVideo,
+      photos: compatible.photos.map((photo) => ({
         ...photo,
         previewPath: previewByPath.get(photo.path) || photo.previewPath || null
       }))
     };
     setProject(hydrated);
     setSelectedId(hydrated.photos[0]?.id ?? null);
+    setLibraryTab(hydrated.video ? "video" : "photos");
+    setCutStartSource(null);
     setCurrentTime(0);
     setPlaying(false);
     setSaved(true);
@@ -386,6 +542,76 @@ function App() {
     }
   };
 
+  const updateVideo = (patch: Partial<VideoSource>) => {
+    mutateProject((value) => {
+      if (!value.video) return value;
+      const normalized = normalizeVideoEdits({ ...value.video, ...patch });
+      return {
+        ...value,
+        video: { ...value.video, ...patch, ...normalized }
+      };
+    });
+  };
+
+  const setVideoStart = () => {
+    if (!project.video) return;
+    updateVideo({
+      trimStart: Math.min(sourceTime, project.video.trimEnd - 0.05),
+      cuts: project.video.cuts.filter((cut) => cut.end > sourceTime)
+    });
+    setCutStartSource(null);
+    setCurrentTime(0);
+    if (videoRef.current) videoRef.current.currentTime = sourceTime;
+    setMessage("Début de la vidéo défini");
+  };
+
+  const setVideoEnd = () => {
+    if (!project.video) return;
+    updateVideo({
+      trimEnd: Math.max(sourceTime, project.video.trimStart + 0.05),
+      cuts: project.video.cuts.filter((cut) => cut.start < sourceTime)
+    });
+    setCutStartSource(null);
+    setCurrentTime(Math.min(currentTime, sourceTimeToEdited({
+      ...project.video,
+      trimEnd: sourceTime
+    }, sourceTime)));
+    setMessage("Fin de la vidéo définie");
+  };
+
+  const completeInternalCut = () => {
+    if (!project.video || cutStartSource === null) {
+      setCutStartSource(sourceTime);
+      setMessage("Début de coupe mémorisé. Placez-vous à la fin de la plage.");
+      return;
+    }
+    if (Math.abs(sourceTime - cutStartSource) < 0.05) {
+      setMessage("La plage à supprimer est trop courte");
+      return;
+    }
+    const cut = {
+      start: Math.min(cutStartSource, sourceTime),
+      end: Math.max(cutStartSource, sourceTime)
+    };
+    const nextVideo = normalizeVideoEdits({
+      ...project.video,
+      cuts: [...project.video.cuts, cut]
+    });
+    if (editedVideoDuration(nextVideo) < 0.05) {
+      setMessage("Cette coupe supprimerait toute la vidéo");
+      return;
+    }
+    updateVideo({ cuts: nextVideo.cuts });
+    setCutStartSource(null);
+    setPlaying(false);
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = cut.end;
+    }
+    setCurrentTime(sourceTimeToEdited(nextVideo, cut.end));
+    setMessage("Plage supprimée du montage");
+  };
+
   return (
     <div className="app-shell" onDragOver={(event) => event.preventDefault()} onDrop={handleFileDrop}>
       <header className="topbar">
@@ -426,7 +652,11 @@ function App() {
               <span className="eyebrow">MÉDIATHÈQUE</span>
               <h2>Vos médias</h2>
             </div>
-            <button className="icon-button" onClick={choosePhotos} title="Ajouter des photos">
+            <button
+              className="icon-button"
+              onClick={libraryTab === "video" ? chooseVideo : choosePhotos}
+              title={libraryTab === "video" ? "Charger une vidéo" : "Ajouter des photos"}
+            >
               <Plus size={19} />
             </button>
           </div>
@@ -434,9 +664,14 @@ function App() {
             <button className={libraryTab === "photos" ? "active" : ""} onClick={() => setLibraryTab("photos")}>
               <Images size={16} /> Photos <span>{project.photos.length}</span>
             </button>
-            <button className={libraryTab === "audio" ? "active" : ""} onClick={() => setLibraryTab("audio")}>
-              <Music2 size={16} /> Audio
+            <button className={libraryTab === "video" ? "active" : ""} onClick={() => setLibraryTab("video")}>
+              <Film size={16} /> Vidéo <span>{project.video ? 1 : 0}</span>
             </button>
+            {!project.video && (
+              <button className={libraryTab === "audio" ? "active" : ""} onClick={() => setLibraryTab("audio")}>
+                <Music2 size={16} /> Audio
+              </button>
+            )}
           </div>
 
           {libraryTab === "photos" ? (
@@ -459,6 +694,37 @@ function App() {
                   </button>
                 ))}
               </div>
+            </div>
+          ) : libraryTab === "video" ? (
+            <div className="library-content">
+              {project.video ? (
+                <div className="video-card">
+                  <img src={window.videor.fileUrl(project.video.previewPath || project.video.path)} alt="" />
+                  <strong>{project.video.name}</strong>
+                  <span>
+                    {project.video.width} × {project.video.height} · {formatTime(project.video.duration)}
+                  </span>
+                  <button
+                    className="icon-button danger"
+                    title="Retirer la vidéo"
+                    onClick={() => mutateProject((value) => ({ ...value, video: null }))}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ) : (
+                <div className="empty-library">
+                  <Film size={30} />
+                  <strong>Aucune vidéo</strong>
+                  <span>MP4, MOV, MKV, WebM, AVI ou M4V</span>
+                </div>
+              )}
+              <button className="secondary full-width" onClick={chooseVideo}>
+                <Upload size={17} /> {project.video ? "Remplacer la vidéo" : "Charger une vidéo"}
+              </button>
+              <p className="library-help">
+                Charger une vidéo active le mode découpe et remplace le diaporama actuel.
+              </p>
             </div>
           ) : (
             <div className="library-content">
@@ -512,7 +778,19 @@ function App() {
               </button>
             </div>
             <div className="player" ref={playerRef}>
-              {activePhoto ? (
+              {project.video ? (
+                <video
+                  ref={videoRef}
+                  src={window.videor.fileUrl(project.video.path)}
+                  preload="metadata"
+                  onLoadedMetadata={() => {
+                    if (videoRef.current) {
+                      videoRef.current.currentTime = editedTimeToSource(project.video!, currentTime);
+                    }
+                  }}
+                  onEnded={() => setPlaying(false)}
+                />
+              ) : activePhoto ? (
                 <img
                   src={photoSource(activePhoto)}
                   alt=""
@@ -523,10 +801,10 @@ function App() {
                   }}
                 />
               ) : (
-                <button className="empty-player" onClick={choosePhotos}>
-                  <div><ImagePlus size={32} /></div>
-                  <strong>Commencez votre vidéo</strong>
-                  <span>Ajoutez des photos pour créer votre montage</span>
+                <button className="empty-player" onClick={chooseVideo}>
+                  <div><Film size={32} /></div>
+                  <strong>Chargez une vidéo ou ajoutez des photos</strong>
+                  <span>Déposez un fichier vidéo ici pour le découper simplement</span>
                 </button>
               )}
               <div className="player-controls">
@@ -555,18 +833,67 @@ function App() {
             <div className="timeline-heading">
               <div>
                 <span className="eyebrow">TIMELINE</span>
-                <strong>{project.photos.length} photo{project.photos.length !== 1 ? "s" : ""} · {formatTime(totalDuration)}</strong>
+                <strong>
+                  {project.video
+                    ? `1 vidéo · ${project.video.cuts.length} coupe${project.video.cuts.length !== 1 ? "s" : ""}`
+                    : `${project.photos.length} photo${project.photos.length !== 1 ? "s" : ""}`}
+                  {" · "}{formatTime(totalDuration)}
+                </strong>
               </div>
-              <button className="secondary small" onClick={choosePhotos}><Plus size={15} />Ajouter</button>
+              <button className="secondary small" onClick={project.video ? chooseVideo : choosePhotos}>
+                <Plus size={15} />{project.video ? "Remplacer" : "Ajouter"}
+              </button>
             </div>
             <div className="timeline-scroll">
               <div className="photo-track">
-                {project.photos.length === 0 && (
+                {project.video ? (
+                  <button
+                    className="video-track"
+                    onClick={(event) => {
+                      const bounds = event.currentTarget.getBoundingClientRect();
+                      const source = project.video!.duration *
+                        ((event.clientX - bounds.left) / bounds.width);
+                      seek(sourceTimeToEdited(project.video!, source));
+                    }}
+                  >
+                    <img
+                      src={window.videor.fileUrl(project.video.previewPath || project.video.path)}
+                      alt=""
+                    />
+                    <span className="video-track-name"><Film size={14} />{project.video.name}</span>
+                    <i
+                      className="trimmed-range"
+                      style={{ left: 0, width: `${(project.video.trimStart / project.video.duration) * 100}%` }}
+                    />
+                    <i
+                      className="trimmed-range"
+                      style={{
+                        left: `${(project.video.trimEnd / project.video.duration) * 100}%`,
+                        right: 0
+                      }}
+                    />
+                    {project.video.cuts.map((cut, index) => (
+                      <i
+                        className="cut-range"
+                        key={`${cut.start}-${cut.end}-${index}`}
+                        style={{
+                          left: `${(cut.start / project.video!.duration) * 100}%`,
+                          width: `${((cut.end - cut.start) / project.video!.duration) * 100}%`
+                        }}
+                      />
+                    ))}
+                    {cutStartSource !== null && (
+                      <i
+                        className="cut-marker"
+                        style={{ left: `${(cutStartSource / project.video.duration) * 100}%` }}
+                      />
+                    )}
+                  </button>
+                ) : project.photos.length === 0 ? (
                   <button className="timeline-empty" onClick={choosePhotos}>
                     Déposez vos photos ici pour commencer
                   </button>
-                )}
-                {project.photos.map((photo, index) => (
+                ) : project.photos.map((photo, index) => (
                   <article
                     key={photo.id}
                     draggable
@@ -587,7 +914,7 @@ function App() {
                   </article>
                 ))}
               </div>
-              <div className="audio-track">
+              {!project.video && <div className="audio-track">
                 {project.audio ? (
                   <>
                     <span className="audio-label"><Music2 size={13} />{project.audio.name}</span>
@@ -600,9 +927,16 @@ function App() {
                 ) : (
                   <button onClick={chooseAudio}><Music2 size={15} />Ajouter une piste audio</button>
                 )}
-              </div>
+              </div>}
               {totalDuration > 0 && (
-                <div className="timeline-playhead" style={{ left: `${(currentTime / totalDuration) * 100}%` }}>
+                <div
+                  className="timeline-playhead"
+                  style={{
+                    left: project.video
+                      ? `${(sourceTime / project.video.duration) * 100}%`
+                      : `${(currentTime / totalDuration) * 100}%`
+                  }}
+                >
                   <span />
                 </div>
               )}
@@ -614,10 +948,89 @@ function App() {
           <div className="panel-heading">
             <div>
               <span className="eyebrow">INSPECTEUR</span>
-              <h2>Photo</h2>
+              <h2>{project.video ? "Découpe vidéo" : "Photo"}</h2>
             </div>
           </div>
-          {selected ? (
+          {project.video ? (
+            <div className="inspector-content">
+              <div className="inspector-thumb">
+                <img
+                  src={window.videor.fileUrl(project.video.previewPath || project.video.path)}
+                  alt=""
+                />
+              </div>
+              <div className="file-name" title={project.video.path}>{project.video.name}</div>
+              <div className="video-metadata">
+                <span>{project.video.width} × {project.video.height}</span>
+                <span>{formatTime(project.video.duration)} source</span>
+                <span>{project.video.hasAudio ? "Avec audio" : "Sans audio"}</span>
+              </div>
+              <div className="field">
+                <span><Clock3 size={15} /> Position actuelle <b>{formatPreciseTime(sourceTime)}</b></span>
+                <p className="field-help">
+                  Déplacez le curseur sous l’aperçu, puis choisissez une action.
+                </p>
+              </div>
+              <div className="field">
+                <span>Raccourcir le début ou la fin</span>
+                <div className="button-stack">
+                  <button className="secondary" onClick={setVideoStart}>
+                    <ChevronRight size={17} />Commencer ici
+                  </button>
+                  <button className="secondary" onClick={setVideoEnd}>
+                    <ChevronLeft size={17} />Terminer ici
+                  </button>
+                </div>
+              </div>
+              <div className="field">
+                <span><Scissors size={15} /> Supprimer une plage interne</span>
+                <p className="field-help">
+                  {cutStartSource === null
+                    ? "Placez-vous au début de la partie à retirer."
+                    : `Début mémorisé à ${formatPreciseTime(cutStartSource)}. Placez-vous à la fin.`}
+                </p>
+                <button className={cutStartSource === null ? "secondary full-width" : "primary full-width"} onClick={completeInternalCut}>
+                  <Scissors size={17} />
+                  {cutStartSource === null ? "Marquer le début" : "Supprimer jusqu’ici"}
+                </button>
+                {cutStartSource !== null && (
+                  <button className="secondary full-width" onClick={() => setCutStartSource(null)}>
+                    Annuler le repère
+                  </button>
+                )}
+              </div>
+              <div className="field">
+                <span>Coupes appliquées <b>{project.video.cuts.length}</b></span>
+                <div className="cut-list">
+                  {project.video.cuts.map((cut, index) => (
+                    <div key={`${cut.start}-${cut.end}-${index}`}>
+                      <span>{formatPreciseTime(cut.start)} → {formatPreciseTime(cut.end)}</span>
+                      <button
+                        className="icon-button"
+                        title="Annuler cette coupe"
+                        onClick={() => updateVideo({
+                          cuts: project.video!.cuts.filter((_item, itemIndex) => itemIndex !== index)
+                        })}
+                      >
+                        <Undo2 size={15} />
+                      </button>
+                    </div>
+                  ))}
+                  {!project.video.cuts.length && <small>Aucune plage interne supprimée.</small>}
+                </div>
+              </div>
+              <button
+                className="danger-button"
+                onClick={() => {
+                  mutateProject((value) => ({ ...value, video: null }));
+                  setCurrentTime(0);
+                  setPlaying(false);
+                }}
+              >
+                <Trash2 size={17} />Retirer cette vidéo
+              </button>
+            </div>
+          ) : selected ? (
             <div className="inspector-content">
               <div className="inspector-thumb">
                 <img
@@ -703,7 +1116,7 @@ function App() {
         <span>{saved ? "Toutes les modifications sont enregistrées" : "Enregistrement…"}</span>
       </footer>
 
-      {project.audio && (
+      {project.audio && !project.video && (
         <audio
           ref={audioRef}
           src={window.videor.fileUrl(project.audio.path)}
@@ -730,9 +1143,15 @@ function App() {
               <button className="icon-button" onClick={() => setExportOpen(false)} disabled={exportProgress !== null}><X size={20} /></button>
             </div>
             <div className="export-summary">
-              <div><Images size={20} /><span><b>{project.photos.length}</b> photos</span></div>
+              <div>
+                {project.video ? <Film size={20} /> : <Images size={20} />}
+                <span>
+                  <b>{project.video ? "Vidéo" : project.photos.length}</b>
+                  {project.video ? `${project.video.cuts.length} coupe(s)` : " photos"}
+                </span>
+              </div>
               <div><Clock3 size={20} /><span><b>{formatTime(totalDuration)}</b> durée</span></div>
-              <div><Music2 size={20} /><span><b>{project.audio ? "Oui" : "Non"}</b> audio</span></div>
+              <div><Music2 size={20} /><span><b>{project.video?.hasAudio || project.audio ? "Oui" : "Non"}</b> audio</span></div>
             </div>
             <div className="export-field">
               <span>Format</span>
@@ -772,7 +1191,7 @@ function App() {
               ) : (
                 <>
                   <button className="secondary" onClick={() => setExportOpen(false)}>Annuler</button>
-                  <button className="primary" disabled={!project.photos.length} onClick={runExport}>
+                  <button className="primary" disabled={!project.photos.length && !project.video} onClick={runExport}>
                     <Download size={18} />Choisir la destination et exporter
                   </button>
                 </>

@@ -55,6 +55,7 @@ montage simple inutilement difficile. Vidéor se concentre sur un scénario clai
 | --- | --- |
 | 📁 **Projet** | Nouveau projet, ouverture, import, export et sauvegarde automatique |
 | 🖼️ **Photos** | Import multiple, glisser-déposer, réorganisation et suppression |
+| 🎞️ **Vidéo** | Import d'une vidéo, coupe du début, de la fin ou d'une plage interne |
 | ✂️ **Édition** | Durée, rotation, recadrage simple et positionnement |
 | 🎵 **Audio** | Import ou remplacement, lecture synchronisée et réglage du volume |
 | 📊 **Timeline** | Une vignette par photo, durée visuelle et forme d'onde audio |
@@ -172,6 +173,7 @@ Les projets utilisent l'extension `.videor`. Il s'agit d'un document JSON
 contenant notamment :
 
 - les chemins des photos et de la piste audio ;
+- le chemin de la vidéo source et ses repères de coupe ;
 - l'ordre et la durée de chaque photo ;
 - la rotation et les paramètres de recadrage ;
 - le volume de la piste audio.
@@ -187,10 +189,12 @@ contenant notamment :
 - [x] Lecture synchronisée avec l'audio
 - [x] Sauvegarde automatique des projets
 - [x] Export MP4/H.264 et WebM/VP9
+- [x] Découpe non destructive d'une vidéo existante
 - [ ] Transitions entre les photos
 - [ ] Effet de mouvement Ken Burns
 - [ ] Enregistrement d'une narration
 - [ ] Projet portable avec médias embarqués
+- [x] Premiers tests unitaires des calculs de découpe
 - [ ] Tests automatisés de l'interface et de l'export
 
 ## 📝 Suivi du projet

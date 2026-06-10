@@ -9,6 +9,12 @@ projet utilise le [versionnage sémantique](https://semver.org/lang/fr/).
 
 ### Ajouté
 
+- import d'une vidéo MP4, MOV, MKV, WebM, AVI ou M4V ;
+- coupe non destructive du début et de la fin d'une vidéo ;
+- suppression de plusieurs plages internes en deux repères ;
+- aperçu vidéo synchronisé avec les portions conservées ;
+- export MP4 ou WebM reconstruisant automatiquement les segments conservés ;
+- tests Vitest des calculs de plages et de conversion temporelle ;
 - protocole sécurisé `videor-media://` pour charger les médias locaux ;
 - génération et mise en cache d'aperçus JPEG avec FFmpeg ;
 - jeu de 30 photos haute résolution dans `test/` pour valider les imports ;
@@ -17,6 +23,8 @@ projet utilise le [versionnage sémantique](https://semver.org/lang/fr/).
 
 ### Modifié
 
+- format projet étendu avec une vidéo source et ses repères de coupe ;
+- médiathèque, timeline et inspecteur adaptés au mode vidéo ;
 - préparation des aperçus lors de l'import et de l'ouverture d'un projet ;
 - poursuite d'un import lorsque certains fichiers sont illisibles ;
 - diagnostics Electron pour les erreurs du processus d'affichage ;

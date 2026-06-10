@@ -12,9 +12,9 @@ nouvelle session, sans devoir reconstruire l'historique du projet.
 - **Branche principale :** `main`
 - **Format projet :** fichier JSON avec l'extension `.videor`
 - **Moteur d'export :** FFmpeg installé sur le système
-- **Chantiers terminés après `0.1.0` :** chargement des médias et intégration
-  desktop Linux
-- **Prochaine priorité :** tests automatisés
+- **Chantiers terminés après `0.1.0` :** chargement des médias, intégration
+  desktop Linux et découpe vidéo
+- **Prochaine priorité :** tests d'intégration de l'export FFmpeg
 
 Vidéor permet de créer un montage simple à partir d'une suite de photos et
 d'une piste audio. L'objectif est de couvrir les besoins essentiels sans
@@ -55,6 +55,16 @@ Kdenlive.
 - aperçu plein écran ;
 - représentation visuelle de la forme d'onde.
 
+### Découpe vidéo
+
+- import d'une vidéo MP4, MOV, MKV, WebM, AVI ou M4V ;
+- lecture de la durée, des dimensions et de la présence d'audio avec FFprobe ;
+- définition simple d'un nouveau début ou d'une nouvelle fin ;
+- suppression de plusieurs plages internes en marquant leur début et leur fin ;
+- aperçu qui saute automatiquement les plages supprimées ;
+- export MP4 ou WebM des seules portions conservées ;
+- montage non destructif : le fichier source n'est jamais modifié.
+
 ### Export
 
 - MP4 avec H.264 et AAC ;
@@ -78,6 +88,12 @@ src/App.tsx
 
 src/styles.css
   Mise en page desktop et design system sombre.
+
+src/videoEditing.ts
+  Calcul des plages conservées et conversion entre temps source et temps monté.
+
+src/videoEditing.test.ts
+  Tests Vitest des règles de découpe vidéo.
 
 build/icon.png
   Icône source 1024 × 1024 utilisée par la fenêtre.
@@ -112,6 +128,7 @@ type Project = {
   name: string;
   photos: Photo[];
   audio: AudioTrack | null;
+  video: VideoSource | null;
   updatedAt?: string;
 };
 ```
@@ -123,6 +140,10 @@ liens si les fichiers sont déplacés.
 Le champ interne optionnel `previewPath` est recalculé lors de l'import ou de
 l'ouverture d'un projet. Les aperçus sont stockés dans le dossier de données
 utilisateur d'Electron et ne remplacent pas les médias d'origine.
+
+Une vidéo est représentée par son chemin source, ses métadonnées, une borne de
+début, une borne de fin et une liste de plages internes supprimées. Ces repères
+sont enregistrés dans le projet ; le média original reste intact.
 
 ## Commandes utiles
 
@@ -176,13 +197,14 @@ Pour une release Linux :
 - aucune transition n'est encore appliquée entre les photos ;
 - aucun effet Ken Burns n'est disponible ;
 - l'enregistrement de narration n'est pas implémenté ;
-- les tests automatisés restent à écrire ;
+- les calculs de découpe sont testés, mais l'interface Electron et l'export
+  FFmpeg ne disposent pas encore de tests automatisés complets ;
 - FFmpeg doit être installé séparément sur la machine.
 
 ## Prochaines priorités
 
-1. ajouter des tests unitaires du modèle projet et des calculs de timeline ;
-2. tester la préparation des aperçus et la construction des commandes FFmpeg ;
+1. tester la préparation des aperçus et la construction des commandes FFmpeg ;
+2. automatiser un export vidéo avec plusieurs plages supprimées ;
 3. automatiser un test d'import avec les photos du dossier `test/` ;
 4. tester l'ouverture, la sauvegarde et la restauration des projets ;
 5. calculer une vraie forme d'onde audio ;
@@ -221,6 +243,28 @@ désormais les tailles 16, 32, 48, 64, 128, 256, 512 et 1024 pixels sous
 `/usr/share/icons/hicolor/<taille>/apps/videor.png`. Les scripts Debian
 rafraîchissent également `hicolor` et la base des fichiers desktop après une
 installation, une mise à jour ou une suppression.
+
+## Dernier chantier : découpe vidéo
+
+Le projet peut maintenant fonctionner dans deux modes exclusifs :
+
+- un diaporama composé de photos et d'une piste audio externe ;
+- une vidéo source unique avec sa piste audio intégrée.
+
+Dans le mode vidéo, l'utilisateur place la tête de lecture puis choisit
+`Commencer ici`, `Terminer ici` ou marque les deux extrémités d'une plage à
+supprimer. `src/videoEditing.ts` normalise et fusionne les coupes, calcule les
+segments conservés et convertit les positions entre la source et le montage.
+
+L'export FFmpeg applique `trim` et `atrim` à chaque segment conservé, remet les
+horodatages à zéro, concatène les segments puis encode le résultat dans le
+format demandé. Les projets existants sans champ `video` restent compatibles.
+
+Validation réalisée avec une source synthétique de 12 secondes contenant de
+l'audio : conservation des plages 1–5 s et 8–11 s, export final mesuré à
+7 secondes en 1280 × 720 avec les pistes vidéo et audio présentes. Le smoke
+test Electron confirme également la création de la carte média, du lecteur et
+de la timeline vidéo après import.
 
 ## Conventions
 

@@ -13,7 +13,7 @@ nouvelle session, sans devoir reconstruire l'historique du projet.
 - **Format projet :** fichier JSON avec l'extension `.videor`
 - **Moteur d'export :** FFmpeg installé sur le système
 - **Dernière release :** `0.2.1`, correctif de lecture de l'aperçu vidéo
-- **Prochaine priorité :** tests d'intégration de l'export FFmpeg
+- **Prochaine priorité :** tests automatisés de l'interface Electron
 
 Vidéor permet de créer un montage simple à partir d'une suite de photos et
 d'une piste audio. L'objectif est de couvrir les besoins essentiels sans
@@ -26,9 +26,11 @@ Kdenlive.
 
 - création d'un nouveau projet ;
 - ouverture et import d'un projet `.videor` ;
+- validation stricte et normalisation des projets version 1 ;
 - sauvegarde manuelle et automatique ;
 - export d'une copie du fichier projet ;
 - restauration de la dernière sauvegarde automatique au démarrage.
+- confirmation configurable avant le remplacement ou la suppression de médias.
 
 ### Photos
 
@@ -50,9 +52,18 @@ Kdenlive.
 - import ou remplacement d'une piste audio ;
 - réglage du volume ;
 - lecture et pause synchronisées avec les photos ;
+- poursuite de l'aperçu après la fin d'une piste audio courte ;
+- ajout de silence à l'export pour conserver toute la durée du diaporama ;
 - navigation vers un instant précis ;
 - aperçu plein écran ;
 - représentation visuelle de la forme d'onde.
+
+### Paramètres
+
+- durée par défaut des nouvelles photos ;
+- format et résolution d'export par défaut ;
+- activation ou désactivation des confirmations d'actions destructrices ;
+- persistance locale des préférences.
 
 ### Découpe vidéo
 
@@ -82,6 +93,12 @@ electron/main.cjs
 electron/preload.cjs
   Pont IPC minimal exposé dans window.videor.
 
+electron/projectValidation.cjs
+  Validation et normalisation du format de projet version 1.
+
+electron/slideshowExport.cjs
+  Construction testable des commandes FFmpeg pour les diaporamas.
+
 src/App.tsx
   Modèle du projet, état React, lecture, timeline et interface.
 
@@ -91,8 +108,8 @@ src/styles.css
 src/videoEditing.ts
   Calcul des plages conservées et conversion entre temps source et temps monté.
 
-src/videoEditing.test.ts
-  Tests Vitest des règles de découpe vidéo.
+electron/*.test.ts et src/*.test.ts
+  Tests Vitest des projets, protocoles médias, exports et règles de découpe.
 
 build/icon.png
   Icône source 1024 × 1024 utilisée par la fenêtre.
@@ -173,7 +190,7 @@ virtuels. Electron utilise donc un rendu logiciel stable.
 Après une modification :
 
 1. exécuter `npm run build` ;
-2. exécuter `npm test` dès que les tests concernés existent ;
+2. exécuter `npm test` ;
 3. lancer `npm run dev` ;
 4. importer les 30 photos du dossier `test/` ;
 5. vérifier que les 30 cartes, clips et aperçus sont chargés ;
@@ -193,11 +210,11 @@ Pour une release Linux :
 La release `0.2.1` corrige le bouton Play du mode découpe vidéo.
 Son artefact principal est `release/Videor-0.2.1-amd64.deb`.
 
-Validation de l'artefact `0.2.1` :
+Validation de l'artefact publié `0.2.1` :
 
-- les 6 tests Vitest passent ;
+- les 9 tests Vitest de la release passent ;
 - le build TypeScript/Vite passe ;
-- le paquet déclare bien la version Debian `0.2.0` ;
+- le paquet déclare bien la version Debian `0.2.1` ;
 - le lanceur desktop et les scripts `postinst`/`postrm` sont valides ;
 - les 8 tailles d'icône sont incluses ;
 - l'application packagée démarre avec le rendu logiciel Linux ;
@@ -210,19 +227,19 @@ Validation de l'artefact `0.2.1` :
 - aucune transition n'est encore appliquée entre les photos ;
 - aucun effet Ken Burns n'est disponible ;
 - l'enregistrement de narration n'est pas implémenté ;
-- les calculs de découpe sont testés, mais l'interface Electron et l'export
-  FFmpeg ne disposent pas encore de tests automatisés complets ;
+- 16 tests couvrent désormais les calculs de découpe, le protocole média, la
+  validation des projets et la génération/export FFmpeg ; l'interface Electron
+  ne dispose pas encore de tests automatisés complets ;
 - FFmpeg doit être installé séparément sur la machine.
 
 ## Prochaines priorités
 
-1. tester la préparation des aperçus et la construction des commandes FFmpeg ;
-2. automatiser un export vidéo avec plusieurs plages supprimées ;
-3. automatiser un test d'import avec les photos du dossier `test/` ;
-4. tester l'ouverture, la sauvegarde et la restauration des projets ;
-5. calculer une vraie forme d'onde audio ;
-6. ajouter des transitions simples et un effet Ken Burns configurable ;
-7. rendre les projets portables avec copie des médias.
+1. automatiser un test d'import avec les photos du dossier `test/` ;
+2. tester l'interface de création, ouverture et restauration des projets ;
+3. automatiser un export vidéo avec plusieurs plages supprimées ;
+4. calculer une vraie forme d'onde audio ;
+5. ajouter des transitions simples et un effet Ken Burns configurable ;
+6. rendre les projets portables avec copie des médias.
 
 ## Chantier publié : chargement des médias
 

@@ -7,9 +7,25 @@ projet utilise le [versionnage sémantique](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté
+
+- paramètres persistants pour la durée des photos, le format et la résolution
+  d'export par défaut ;
+- confirmations configurables avant les actions qui remplacent ou suppriment
+  des médias ;
+- validation et normalisation des fichiers projet version 1 ;
+- tests de la validation des projets et de la commande FFmpeg des diaporamas ;
+- test d'intégration FFmpeg avec une piste audio plus courte que le montage.
+
+### Corrigé
+
+- l'aperçu continue désormais après la fin d'une piste audio courte ;
+- l'export complète une piste audio courte par du silence au lieu de raccourcir
+  la vidéo à la durée de l'audio.
+
 ### Prévu
 
-- tests automatisés de l'interface Electron et de l'export FFmpeg ;
+- tests automatisés complets de l'interface Electron ;
 - transitions simples entre les photos ;
 - effet de mouvement Ken Burns ;
 - forme d'onde calculée depuis le fichier audio ;

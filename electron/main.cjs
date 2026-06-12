@@ -6,7 +6,9 @@ const crypto = require("node:crypto");
 const { spawn } = require("node:child_process");
 const { Readable } = require("node:stream");
 const { buildVideoExportArgs } = require("./videoExport.cjs");
+const { buildSlideshowExportArgs } = require("./slideshowExport.cjs");
 const { contentTypeForExtension, parseByteRange } = require("./mediaProtocol.cjs");
+const { validateProject } = require("./projectValidation.cjs");
 
 let mainWindow;
 let currentProjectPath = null;
@@ -324,16 +326,19 @@ async function prepareVideo(filePath) {
 
 async function readProject(filePath) {
   const content = await fs.readFile(filePath, "utf8");
-  const project = JSON.parse(content);
-  if (project.format !== "videor-project") {
-    throw new Error("Ce fichier n'est pas un projet Vidéor valide.");
+  try {
+    return validateProject(JSON.parse(content));
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      throw new Error("Le fichier projet contient un JSON invalide.");
+    }
+    throw error;
   }
-  return project;
 }
 
 async function writeProject(filePath, project) {
   const payload = {
-    ...project,
+    ...validateProject(project),
     format: "videor-project",
     version: 1,
     updatedAt: new Date().toISOString()
@@ -479,55 +484,14 @@ function runFfmpeg(project, options, outputPath) {
     return runVideoFfmpeg(project.video, options, outputPath);
   }
   return new Promise((resolve, reject) => {
-    const dimensions = {
-      "720p": [1280, 720],
-      "1080p": [1920, 1080],
-      "4k": [3840, 2160]
-    }[options.resolution] || [1920, 1080];
-    const [width, height] = dimensions;
-    const totalDuration = project.photos.reduce((sum, photo) => sum + photo.duration, 0);
-    const args = ["-y"];
-
-    for (const photo of project.photos) {
-      args.push("-loop", "1", "-t", String(photo.duration), "-i", photo.path);
+    let exportConfig;
+    try {
+      exportConfig = buildSlideshowExportArgs(project, options, outputPath);
+    } catch (error) {
+      reject(error);
+      return;
     }
-    const audioIndex = project.audio ? project.photos.length : -1;
-    if (project.audio) args.push("-i", project.audio.path);
-
-    const filters = project.photos.map((photo, index) => {
-      const rotation = {
-        90: "transpose=1,",
-        180: "hflip,vflip,",
-        270: "transpose=2,"
-      }[photo.rotation] || "";
-      const framing = photo.fit === "contain"
-        ? `scale=${width}:${height}:force_original_aspect_ratio=decrease,` +
-          `pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:color=black`
-        : `scale=${width}:${height}:force_original_aspect_ratio=increase,` +
-          `crop=${width}:${height}:(iw-ow)*${(photo.positionX ?? 50) / 100}:` +
-          `(ih-oh)*${(photo.positionY ?? 50) / 100}`;
-      return `[${index}:v]${rotation}${framing},setsar=1,fps=30,format=yuv420p[v${index}]`;
-    });
-    filters.push(
-      `${project.photos.map((_photo, index) => `[v${index}]`).join("")}` +
-      `concat=n=${project.photos.length}:v=1:a=0[vout]`
-    );
-    args.push("-filter_complex", filters.join(";"), "-map", "[vout]");
-
-    if (audioIndex >= 0) {
-      args.push("-map", `${audioIndex}:a`, "-filter:a", `volume=${project.audio.volume}`, "-shortest");
-    } else {
-      args.push("-t", String(totalDuration));
-    }
-
-    if (options.format === "webm") {
-      args.push("-c:v", "libvpx-vp9", "-crf", "28", "-b:v", "0");
-      if (audioIndex >= 0) args.push("-c:a", "libopus");
-    } else {
-      args.push("-c:v", "libx264", "-preset", "medium", "-crf", "20", "-movflags", "+faststart");
-      if (audioIndex >= 0) args.push("-c:a", "aac", "-b:a", "192k");
-    }
-    args.push(outputPath);
+    const { args, totalDuration } = exportConfig;
 
     exportProcess = spawn("ffmpeg", args);
     let stderr = "";

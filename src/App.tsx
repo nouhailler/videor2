@@ -93,6 +93,41 @@ type ExportOptions = {
   resolution: "720p" | "1080p" | "4k";
 };
 
+type AppSettings = {
+  defaultPhotoDuration: number;
+  defaultFormat: ExportOptions["format"];
+  defaultResolution: ExportOptions["resolution"];
+  confirmDestructiveActions: boolean;
+};
+
+const defaultSettings: AppSettings = {
+  defaultPhotoDuration: 5,
+  defaultFormat: "mp4",
+  defaultResolution: "1080p",
+  confirmDestructiveActions: true
+};
+
+function loadSettings(): AppSettings {
+  try {
+    const stored = JSON.parse(localStorage.getItem("videor-settings") || "{}");
+    return {
+      defaultPhotoDuration:
+        Number.isFinite(stored.defaultPhotoDuration) &&
+        stored.defaultPhotoDuration >= 0.5 &&
+        stored.defaultPhotoDuration <= 600
+          ? stored.defaultPhotoDuration
+          : defaultSettings.defaultPhotoDuration,
+      defaultFormat: stored.defaultFormat === "webm" ? "webm" : "mp4",
+      defaultResolution: ["720p", "1080p", "4k"].includes(stored.defaultResolution)
+        ? stored.defaultResolution
+        : defaultSettings.defaultResolution,
+      confirmDestructiveActions: stored.confirmDestructiveActions !== false
+    };
+  } catch {
+    return defaultSettings;
+  }
+}
+
 const emptyProject = (): Project => ({
   format: "videor-project",
   version: 1,
@@ -136,6 +171,7 @@ function photoAtTime(photos: Photo[], time: number) {
 }
 
 function App() {
+  const [settings, setSettings] = useState<AppSettings>(loadSettings);
   const [project, setProject] = useState<Project>(emptyProject);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
@@ -144,9 +180,10 @@ function App() {
   const [message, setMessage] = useState("Prêt");
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
-    format: "mp4",
-    resolution: "1080p"
+    format: settings.defaultFormat,
+    resolution: settings.defaultResolution
   });
   const [exportProgress, setExportProgress] = useState<number | null>(null);
   const [libraryTab, setLibraryTab] = useState<"photos" | "video" | "audio">("photos");
@@ -169,11 +206,16 @@ function App() {
   const sourceTime = project.video
     ? editedTimeToSource(project.video, currentTime)
     : currentTime;
+  const hasProjectContent = project.photos.length > 0 || Boolean(project.audio) || Boolean(project.video);
 
   const mutateProject = useCallback((mutator: (value: Project) => Project) => {
     setProject((value) => mutator(value));
     setSaved(false);
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("videor-settings", JSON.stringify(settings));
+  }, [settings]);
 
   useEffect(() => {
     window.videor.loadAutosave().then((restored) => {
@@ -235,7 +277,7 @@ function App() {
         return;
       }
       const audio = audioRef.current;
-      const next = project.audio && audio
+      const next = project.audio && audio && !audio.ended
         ? audio.currentTime
         : playbackStartRef.current.mediaTime +
           (performance.now() - playbackStartRef.current.wallTime) / 1000;
@@ -254,9 +296,16 @@ function App() {
     };
   }, [playing, project.audio, project.video, totalDuration]);
 
+  const confirmDestructive = useCallback((message: string) => {
+    return !settings.confirmDestructiveActions || window.confirm(message);
+  }, [settings.confirmDestructiveActions]);
+
   const addPhotos = useCallback(async (paths: string[]) => {
     const accepted = paths.filter((path) => /\.(jpe?g|png|webp|bmp)$/i.test(path));
     if (!accepted.length) return;
+    if (project.video && !confirmDestructive(
+      "Ajouter des photos retirera la vidéo actuelle et ses coupes. Continuer ?"
+    )) return;
     setMessage(`Préparation de ${accepted.length} photo${accepted.length > 1 ? "s" : ""}…`);
     const prepared = await window.videor.preparePhotos(accepted);
     const valid = prepared.filter((item) => item.previewPath);
@@ -265,7 +314,7 @@ function App() {
       path,
       previewPath,
       name: basename(path),
-      duration: 5,
+      duration: settings.defaultPhotoDuration,
       rotation: 0,
       fit: "cover",
       positionX: 50,
@@ -286,7 +335,7 @@ function App() {
       `${photos.length} photo${photos.length > 1 ? "s" : ""} ajoutée${photos.length > 1 ? "s" : ""}` +
       (rejected ? ` · ${rejected} fichier${rejected > 1 ? "s" : ""} ignoré${rejected > 1 ? "s" : ""}` : "")
     );
-  }, [mutateProject]);
+  }, [confirmDestructive, mutateProject, project.video, settings.defaultPhotoDuration]);
 
   const choosePhotos = async () => {
     try {
@@ -299,6 +348,9 @@ function App() {
   const chooseAudio = async () => {
     const path = await window.videor.chooseAudio();
     if (!path) return;
+    if (project.audio && !confirmDestructive(
+      "Remplacer la piste audio actuelle ?"
+    )) return;
     mutateProject((value) => ({
       ...value,
       audio: { path, name: basename(path), duration: 0, volume: value.audio?.volume ?? 0.8 }
@@ -309,6 +361,9 @@ function App() {
   };
 
   const importVideo = useCallback(async (path: string) => {
+    if ((project.photos.length || project.audio || project.video) && !confirmDestructive(
+      "Charger cette vidéo remplacera les photos, l’audio et la vidéo actuels. Continuer ?"
+    )) return;
     setMessage("Analyse de la vidéo…");
     const prepared = await window.videor.prepareVideo(path);
     if (!prepared || prepared.error || !prepared.previewPath) {
@@ -338,7 +393,7 @@ function App() {
     setCurrentTime(0);
     setPlaying(false);
     setMessage(`Vidéo chargée : ${video.name}`);
-  }, [mutateProject]);
+  }, [confirmDestructive, mutateProject, project.audio, project.photos.length, project.video]);
 
   const chooseVideo = async () => {
     try {
@@ -436,7 +491,11 @@ function App() {
       }
       return;
     }
-    if (project.audio && audioRef.current) {
+    if (
+      project.audio &&
+      audioRef.current &&
+      currentTime < audioRef.current.duration
+    ) {
       audioRef.current.currentTime = currentTime;
       await audioRef.current.play();
     }
@@ -499,6 +558,9 @@ function App() {
   };
 
   const openProject = async () => {
+    if (hasProjectContent && !confirmDestructive(
+      "Ouvrir un autre projet remplacera le montage actuel. Continuer ?"
+    )) return;
     try {
       const result = await window.videor.openProject();
       if (result) await loadProject(result.project as Project, "Projet ouvert");
@@ -508,6 +570,9 @@ function App() {
   };
 
   const importProject = async () => {
+    if (hasProjectContent && !confirmDestructive(
+      "Importer un projet remplacera le montage actuel. Continuer ?"
+    )) return;
     try {
       const result = await window.videor.importProject();
       if (result) await loadProject(result.project as Project, "Projet importé");
@@ -517,6 +582,9 @@ function App() {
   };
 
   const newProject = async () => {
+    if (hasProjectContent && !confirmDestructive(
+      "Créer un nouveau projet effacera le montage actuel de l’espace de travail. Continuer ?"
+    )) return;
     await window.videor.newProject();
     await loadProject(emptyProject(), "Nouveau projet");
   };
@@ -647,7 +715,9 @@ function App() {
           <button className="primary" onClick={() => setExportOpen(true)}>
             <Download size={iconSize} />Exporter la vidéo
           </button>
-          <button className="icon-button" title="Paramètres"><Settings size={20} /></button>
+          <button className="icon-button" title="Paramètres" onClick={() => setSettingsOpen(true)}>
+            <Settings size={20} />
+          </button>
         </div>
       </header>
 
@@ -713,7 +783,12 @@ function App() {
                   <button
                     className="icon-button danger"
                     title="Retirer la vidéo"
-                    onClick={() => mutateProject((value) => ({ ...value, video: null }))}
+                    onClick={() => {
+                      if (!confirmDestructive("Retirer cette vidéo et toutes ses coupes ?")) return;
+                      mutateProject((value) => ({ ...value, video: null }));
+                      setCurrentTime(0);
+                      setPlaying(false);
+                    }}
                   >
                     <Trash2 size={16} />
                   </button>
@@ -741,7 +816,13 @@ function App() {
                     <strong>{project.audio.name}</strong>
                     <span>{formatTime(project.audio.duration)} · piste principale</span>
                   </div>
-                  <button className="icon-button danger" onClick={() => mutateProject((value) => ({ ...value, audio: null }))}>
+                  <button
+                    className="icon-button danger"
+                    onClick={() => {
+                      if (!confirmDestructive("Retirer la piste audio actuelle ?")) return;
+                      mutateProject((value) => ({ ...value, audio: null }));
+                    }}
+                  >
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -1028,6 +1109,7 @@ function App() {
               <button
                 className="danger-button"
                 onClick={() => {
+                  if (!confirmDestructive("Retirer cette vidéo et toutes ses coupes ?")) return;
                   mutateProject((value) => ({ ...value, video: null }));
                   setCurrentTime(0);
                   setPlaying(false);
@@ -1103,7 +1185,14 @@ function App() {
                   <button className="secondary" onClick={() => movePhoto(1)}>Après<ChevronRight size={17} /></button>
                 </div>
               </div>
-              <button className="danger-button" onClick={() => removePhoto(selected.id)}>
+              <button
+                className="danger-button"
+                onClick={() => {
+                  if (confirmDestructive(`Supprimer la photo « ${selected.name} » ?`)) {
+                    removePhoto(selected.id);
+                  }
+                }}
+              >
                 <Trash2 size={17} />Supprimer cette photo
               </button>
             </div>
@@ -1134,8 +1223,111 @@ function App() {
               audio: value.audio ? { ...value.audio, duration } : null
             }));
           }}
-          onEnded={() => setPlaying(false)}
+          onEnded={(event) => {
+            const audioEnd = Math.min(event.currentTarget.duration, totalDuration);
+            setCurrentTime(audioEnd);
+            playbackStartRef.current = {
+              wallTime: performance.now(),
+              mediaTime: audioEnd
+            };
+            if (audioEnd >= totalDuration) setPlaying(false);
+          }}
         />
+      )}
+
+      {settingsOpen && (
+        <div className="modal-backdrop" onMouseDown={() => setSettingsOpen(false)}>
+          <section className="settings-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="modal-heading">
+              <div>
+                <span className="eyebrow">PRÉFÉRENCES</span>
+                <h2>Paramètres</h2>
+              </div>
+              <button className="icon-button" onClick={() => setSettingsOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="settings-content">
+              <label className="settings-field">
+                <span>Durée par défaut d’une nouvelle photo</span>
+                <div className="duration-input">
+                  <input
+                    type="number"
+                    min="0.5"
+                    max="600"
+                    step="0.5"
+                    value={settings.defaultPhotoDuration}
+                    onChange={(event) => setSettings((value) => ({
+                      ...value,
+                      defaultPhotoDuration: Math.min(600, Math.max(0.5, Number(event.target.value) || 0.5))
+                    }))}
+                  />
+                  <em>secondes</em>
+                </div>
+              </label>
+              <div className="settings-field">
+                <span>Format d’export par défaut</span>
+                <div className="segmented">
+                  {(["mp4", "webm"] as const).map((format) => (
+                    <button
+                      key={format}
+                      className={settings.defaultFormat === format ? "active" : ""}
+                      onClick={() => {
+                        setSettings((value) => ({ ...value, defaultFormat: format }));
+                        setExportOptions((value) => ({ ...value, format }));
+                      }}
+                    >
+                      {format.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="settings-field">
+                <span>Résolution d’export par défaut</span>
+                <div className="segmented">
+                  {(["720p", "1080p", "4k"] as const).map((resolution) => (
+                    <button
+                      key={resolution}
+                      className={settings.defaultResolution === resolution ? "active" : ""}
+                      onClick={() => {
+                        setSettings((value) => ({ ...value, defaultResolution: resolution }));
+                        setExportOptions((value) => ({ ...value, resolution }));
+                      }}
+                    >
+                      {resolution === "4k" ? "4K" : resolution}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <label className="settings-toggle">
+                <input
+                  type="checkbox"
+                  checked={settings.confirmDestructiveActions}
+                  onChange={(event) => setSettings((value) => ({
+                    ...value,
+                    confirmDestructiveActions: event.target.checked
+                  }))}
+                />
+                <span>
+                  <b>Confirmer les actions destructrices</b>
+                  <small>Demande une confirmation avant de remplacer ou supprimer des médias.</small>
+                </span>
+              </label>
+            </div>
+            <div className="modal-actions">
+              <button className="secondary" onClick={() => {
+                setSettings(defaultSettings);
+                setExportOptions({
+                  format: defaultSettings.defaultFormat,
+                  resolution: defaultSettings.defaultResolution
+                });
+              }}>
+                Réinitialiser
+              </button>
+              <button className="primary" onClick={() => setSettingsOpen(false)}>Terminé</button>
+            </div>
+          </section>
+        </div>
       )}
 
       {exportOpen && (

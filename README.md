@@ -53,14 +53,15 @@ montage simple inutilement difficile. Vidéor se concentre sur un scénario clai
 
 | Domaine | Fonctionnalités |
 | --- | --- |
-| 📁 **Projet** | Nouveau projet, ouverture, import, export et sauvegarde automatique |
+| 📁 **Projet** | Nouveau projet, ouverture, import, validation, export et sauvegarde automatique |
 | 🖼️ **Photos** | Import multiple, glisser-déposer, réorganisation et suppression |
 | 🎞️ **Vidéo** | Import d'une vidéo, coupe du début, de la fin ou d'une plage interne |
 | ✂️ **Édition** | Durée, rotation, recadrage simple et positionnement |
-| 🎵 **Audio** | Import ou remplacement, lecture synchronisée et réglage du volume |
+| 🎵 **Audio** | Import ou remplacement, lecture synchronisée, silence automatique et réglage du volume |
 | 📊 **Timeline** | Une vignette par photo, durée visuelle et forme d'onde audio |
 | ▶️ **Aperçu** | Lecture, pause, navigation temporelle et mode plein écran |
 | 📦 **Export** | MP4/H.264 ou WebM/VP9 en 720p, 1080p ou 4K |
+| ⚙️ **Paramètres** | Durée photo et valeurs d'export par défaut, confirmations configurables |
 
 ## 🧰 Prérequis
 
@@ -178,6 +179,10 @@ contenant notamment :
 - la rotation et les paramètres de recadrage ;
 - le volume de la piste audio.
 
+À l'ouverture et à l'enregistrement, Vidéor valide la structure du projet, sa
+version, les types de médias, les durées et les paramètres d'édition. Les
+fichiers incompatibles ou corrompus sont refusés avec un message explicite.
+
 > [!WARNING]
 > Le fichier projet référence actuellement les médias à leur emplacement
 > d'origine. Déplacer ou supprimer ces fichiers peut empêcher leur chargement.
@@ -194,8 +199,9 @@ contenant notamment :
 - [ ] Effet de mouvement Ken Burns
 - [ ] Enregistrement d'une narration
 - [ ] Projet portable avec médias embarqués
-- [x] Premiers tests unitaires des calculs de découpe
-- [ ] Tests automatisés de l'interface et de l'export
+- [x] Tests unitaires des calculs de découpe et de la validation des projets
+- [x] Test d'intégration FFmpeg de l'export avec audio court
+- [ ] Tests automatisés complets de l'interface Electron
 
 ## 📝 Suivi du projet
 

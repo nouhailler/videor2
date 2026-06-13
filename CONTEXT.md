@@ -13,6 +13,8 @@ nouvelle session, sans devoir reconstruire l'historique du projet.
 - **Format projet :** fichier JSON avec l'extension `.videor`
 - **Moteur d'export :** FFmpeg installé sur le système
 - **Dernière release :** `0.2.1`, correctif de lecture de l'aperçu vidéo
+- **État de `main` :** améliorations non publiées de l'audio, de la validation
+  des projets, des paramètres et des confirmations
 - **Prochaine priorité :** tests automatisés de l'interface Electron
 
 Vidéor permet de créer un montage simple à partir d'une suite de photos et
@@ -29,7 +31,7 @@ Kdenlive.
 - validation stricte et normalisation des projets version 1 ;
 - sauvegarde manuelle et automatique ;
 - export d'une copie du fichier projet ;
-- restauration de la dernière sauvegarde automatique au démarrage.
+- restauration de la dernière sauvegarde automatique au démarrage ;
 - confirmation configurable avant le remplacement ou la suppression de médias.
 
 ### Photos
@@ -65,6 +67,17 @@ Kdenlive.
 - activation ou désactivation des confirmations d'actions destructrices ;
 - persistance locale des préférences.
 
+### Onboarding et aide
+
+- introduction en quatre étapes au premier lancement ;
+- visite guidée des projets, de la médiathèque, de l'aperçu, de la timeline,
+  de l'inspecteur et de l'export ;
+- centre d'aide couvrant Projet, Photos, Vidéo, Audio, Aperçu, Timeline,
+  Inspecteur, Export et Paramètres ;
+- conseil contextuel accessible depuis chaque zone principale ;
+- démonstrations animées sans mutation du projet utilisateur ;
+- relance manuelle de l'introduction et de la visite depuis le centre d'aide.
+
 ### Découpe vidéo
 
 - import d'une vidéo MP4, MOV, MKV, WebM, AVI ou M4V ;
@@ -99,8 +112,20 @@ electron/projectValidation.cjs
 electron/slideshowExport.cjs
   Construction testable des commandes FFmpeg pour les diaporamas.
 
+electron/videoExport.cjs
+  Construction testable des commandes FFmpeg pour les vidéos découpées.
+
+electron/mediaProtocol.cjs
+  Types MIME et analyse des requêtes HTTP Range.
+
 src/App.tsx
   Modèle du projet, état React, lecture, timeline et interface.
+
+src/GuidanceUI.tsx
+  Composants de l'onboarding, de la visite, de l'aide et des démonstrations.
+
+src/guidance.ts
+  Contenus structurés, rubriques d'aide et persistance du premier lancement.
 
 src/styles.css
   Mise en page desktop et design system sombre.
@@ -161,6 +186,30 @@ Une vidéo est représentée par son chemin source, ses métadonnées, une borne
 début, une borne de fin et une liste de plages internes supprimées. Ces repères
 sont enregistrés dans le projet ; le média original reste intact.
 
+La validation impose deux modes exclusifs :
+
+- `photos` peut contenir un diaporama avec une piste `audio` externe ;
+- `video` contient une source unique et utilise uniquement son audio intégré.
+
+Un projet mélangeant les deux modes, une version inconnue, un type de média non
+pris en charge ou des valeurs hors limites est refusé.
+
+## Données locales
+
+- la sauvegarde automatique est écrite dans
+  `app.getPath("userData")/autosave.videor` ;
+- les aperçus JPEG sont mis en cache sous
+  `app.getPath("userData")/previews/` ;
+- les préférences sont stockées dans `localStorage` avec la clé
+  `videor-settings` ;
+- la fin du premier onboarding est stockée avec la clé
+  `videor-onboarding-complete` ;
+- les projets utilisateur conservent des chemins absolus vers leurs médias.
+
+Le bouton **Nouveau** remet à zéro le chemin de sauvegarde courant. **Ouvrir**
+et **Enregistrer** travaillent ensuite sur ce chemin, tandis que **Importer**
+et **Projet** manipulent une copie sans l'adopter comme projet courant.
+
 ## Commandes utiles
 
 ```bash
@@ -168,6 +217,7 @@ npm install
 npm run dev
 npm run build
 npm start
+npm test
 npm run package:deb
 npm run package:linux
 ```
@@ -185,6 +235,20 @@ L'accélération matérielle est désactivée sous Linux pour éviter les planta
 du processus GPU observés avec certains pilotes VA-API ou environnements
 virtuels. Electron utilise donc un rendu logiciel stable.
 
+Le test `electron/slideshowExport.integration.test.ts` lance réellement FFmpeg
+et FFprobe dans un dossier temporaire. Un environnement restreint peut
+nécessiter l'autorisation de créer ces sous-processus.
+
+Le smoke test de l'aide peut être lancé dans un profil vierge avec :
+
+```bash
+VIDEOR_SMOKE_GUIDANCE=1 npm start -- --user-data-dir=/tmp/videor-guidance-smoke
+```
+
+Il parcourt l'onboarding, la visite guidée, ouvre le centre d'aide et lance une
+démonstration. Le résultat attendu est écrit sous
+`VIDEOR_GUIDANCE_SMOKE_RESULT` dans la console Electron.
+
 ## Vérifications recommandées
 
 Après une modification :
@@ -195,8 +259,10 @@ Après une modification :
 4. importer les 30 photos du dossier `test/` ;
 5. vérifier que les 30 cartes, clips et aperçus sont chargés ;
 6. tester lecture, déplacement, rotation et recadrage ;
-7. exporter un MP4 court avec audio ;
-8. vérifier le résultat avec `ffprobe`.
+7. tester une piste audio plus courte que le diaporama ;
+8. exporter un MP4 court avec audio ;
+9. vérifier la durée et les pistes avec `ffprobe` ;
+10. charger une vidéo, créer une coupe interne et vérifier son export.
 
 Pour une release Linux :
 
@@ -209,6 +275,10 @@ Pour une release Linux :
 
 La release `0.2.1` corrige le bouton Play du mode découpe vidéo.
 Son artefact principal est `release/Videor-0.2.1-amd64.deb`.
+
+Les changements présents sur `main` après le tag `v0.2.1` sont décrits dans la
+section `Non publié` de `CHANGELOG.md`. Ils ne font pas partie de la release
+`0.2.1` tant qu'une nouvelle version n'a pas été créée.
 
 Validation de l'artefact publié `0.2.1` :
 
@@ -227,9 +297,10 @@ Validation de l'artefact publié `0.2.1` :
 - aucune transition n'est encore appliquée entre les photos ;
 - aucun effet Ken Burns n'est disponible ;
 - l'enregistrement de narration n'est pas implémenté ;
-- 16 tests couvrent désormais les calculs de découpe, le protocole média, la
+- 20 tests couvrent désormais les calculs de découpe, le protocole média, la
   validation des projets et la génération/export FFmpeg ; l'interface Electron
-  ne dispose pas encore de tests automatisés complets ;
+  ne dispose pas encore de tests automatisés complets. Les contenus et la
+  persistance de l'aide sont couverts par `src/guidance.test.ts` ;
 - FFmpeg doit être installé séparément sur la machine.
 
 ## Prochaines priorités
@@ -257,9 +328,9 @@ des photos locales volumineuses :
 
 Le build TypeScript/Vite passe. Un smoke test Electron dans un profil vierge a
 chargé les 30 photos du dossier `test/`, créé 30 cartes et 30 clips, sans aucun
-aperçu en échec. La prochaine étape consiste à extraire les fonctions testables
-des processus Electron et React, puis à couvrir ce comportement avec Vitest et
-un test d'intégration d'import.
+aperçu en échec. Les fonctions de validation et de construction des commandes
+FFmpeg ont depuis été extraites et couvertes par Vitest. L'import complet des
+30 photos reste à automatiser.
 
 ## Intégration desktop Linux
 
@@ -316,3 +387,31 @@ média.
 - changements limités au besoin traité ;
 - mise à jour de `CHANGELOG.md` pour chaque évolution visible ;
 - aucune dépendance système implicite en dehors de FFmpeg/FFprobe.
+
+## Diagnostic rapide
+
+### Le renderer ne démarre pas
+
+1. exécuter `npm run build` pour détecter une erreur TypeScript ;
+2. vérifier la console Electron et les messages `render-process-gone` ;
+3. distinguer les avertissements `libva` non bloquants des erreurs Chromium ;
+4. tester avec un dossier de données utilisateur vierge si la sauvegarde
+   automatique semble corrompue.
+
+### Un média ne se charge pas
+
+1. vérifier que le chemin enregistré existe encore ;
+2. vérifier son extension dans `electron/mediaProtocol.cjs` et dans le handler
+   de sélection correspondant ;
+3. lancer FFmpeg ou FFprobe directement sur le fichier ;
+4. supprimer uniquement le cache d'aperçu concerné si la source a changé de
+   manière inhabituelle.
+
+### Un export échoue
+
+1. récupérer les dernières lignes de `stderr` FFmpeg ;
+2. vérifier la présence de `libx264`, `libvpx-vp9`, `aac` et `libopus` ;
+3. inspecter les arguments produits par `slideshowExport.cjs` ou
+   `videoExport.cjs` ;
+4. ajouter un test de construction des arguments puis, si nécessaire, un test
+   d'intégration avec une source synthétique.

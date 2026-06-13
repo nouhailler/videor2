@@ -1,13 +1,13 @@
 <div align="center">
 
-# 🎬 Vidéor
+# Vidéor
 
-### Le montage photo et audio, simplement.
+### Créer un diaporama photo ou découper une vidéo, simplement.
 
-Une application de bureau Linux pour créer une vidéo à partir de photos et
-d'une piste audio, sans la complexité d'un logiciel de montage professionnel.
+Application de bureau Linux pour assembler des photos avec une piste audio,
+prévisualiser le résultat et l'exporter en MP4 ou WebM.
 
-[![Linux](https://img.shields.io/badge/Linux-Desktop-FCC624?logo=linux&logoColor=black)](#-prérequis)
+[![Linux](https://img.shields.io/badge/Linux-Desktop-FCC624?logo=linux&logoColor=black)](#prérequis)
 [![Electron](https://img.shields.io/badge/Electron-34-47848F?logo=electron&logoColor=white)](https://www.electronjs.org/)
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -16,62 +16,110 @@ d'une piste audio, sans la complexité d'un logiciel de montage professionnel.
 </div>
 
 <p align="center">
-  <img src="build/icon.png" alt="Icône Vidéor" width="160">
+  <img src="build/icon.png" alt="Icône Vidéor" width="150">
 </p>
 
 ![Aperçu de l'interface Vidéor](stitch/espace_de_travail_coh_rent/screen.png)
 
 > [!NOTE]
-> Vidéor est actuellement en phase MVP. L'application cible exclusivement les
-> ordinateurs Linux.
+> Vidéor est un MVP destiné aux ordinateurs Linux. FFmpeg et FFprobe doivent
+> être installés sur la machine, y compris avec le paquet Debian ou l'AppImage.
 
-## 📑 Sommaire
+> [!IMPORTANT]
+> Cette documentation décrit l'état actuel de la branche `main`. La dernière
+> release publiée est `0.2.1` ; les paramètres, les confirmations, la validation
+> renforcée des projets et le correctif des pistes audio courtes sont encore
+> classés dans les changements non publiés.
 
-- [Pourquoi Vidéor ?](#-pourquoi-vidéor-)
-- [Fonctionnalités](#-fonctionnalités)
-- [Prérequis](#-prérequis)
-- [Installation](#-installation)
-- [Utilisation](#-utilisation)
-- [Créer un paquet Linux](#-créer-un-paquet-linux)
-- [Architecture](#-architecture)
-- [Format des projets](#-format-des-projets)
-- [Feuille de route](#-feuille-de-route)
-- [Suivi du projet](#-suivi-du-projet)
+## Sommaire
 
-## 💡 Pourquoi Vidéor ?
+- [Fonctionnalités](#fonctionnalités)
+- [Installation](#installation)
+- [Prérequis](#prérequis)
+- [Premiers pas](#premiers-pas)
+- [Développement](#développement)
+- [Architecture](#architecture)
+- [Format des projets](#format-des-projets)
+- [Dépannage](#dépannage)
+- [Limites et feuille de route](#limites-actuelles)
 
-Les logiciels comme Kdenlive sont puissants, mais leur richesse peut rendre un
-montage simple inutilement difficile. Vidéor se concentre sur un scénario clair :
+## Fonctionnalités
 
-1. **Importer des photos**
-2. **Choisir leur ordre et leur durée**
-3. **Ajouter une piste audio**
-4. **Prévisualiser le résultat**
-5. **Exporter la vidéo**
+Vidéor propose deux modes de montage exclusifs :
 
-## ✨ Fonctionnalités
+- **Diaporama** : photos ordonnées, durée individuelle, rotation, recadrage,
+  positionnement et piste audio externe ;
+- **Découpe vidéo** : une vidéo source, raccourcissement du début ou de la fin,
+  et suppression de plusieurs plages internes.
 
 | Domaine | Fonctionnalités |
 | --- | --- |
-| 📁 **Projet** | Nouveau projet, ouverture, import, validation, export et sauvegarde automatique |
-| 🖼️ **Photos** | Import multiple, glisser-déposer, réorganisation et suppression |
-| 🎞️ **Vidéo** | Import d'une vidéo, coupe du début, de la fin ou d'une plage interne |
-| ✂️ **Édition** | Durée, rotation, recadrage simple et positionnement |
-| 🎵 **Audio** | Import ou remplacement, lecture synchronisée, silence automatique et réglage du volume |
-| 📊 **Timeline** | Une vignette par photo, durée visuelle et forme d'onde audio |
-| ▶️ **Aperçu** | Lecture, pause, navigation temporelle et mode plein écran |
-| 📦 **Export** | MP4/H.264 ou WebM/VP9 en 720p, 1080p ou 4K |
-| ⚙️ **Paramètres** | Durée photo et valeurs d'export par défaut, confirmations configurables |
+| Projet | Nouveau projet, ouverture, import, copie, validation et sauvegarde automatique |
+| Photos | Import multiple, glisser-déposer, réorganisation, durée, rotation et recadrage |
+| Audio | Import, remplacement, volume, lecture synchronisée et silence automatique en fin de piste |
+| Vidéo | Import MP4, MOV, MKV, WebM, AVI ou M4V et découpe non destructive |
+| Aperçu | Lecture, pause, navigation temporelle et plein écran |
+| Export | MP4/H.264/AAC ou WebM/VP9/Opus en 720p, 1080p ou 4K |
+| Paramètres | Durée des photos, valeurs d'export par défaut et confirmations configurables |
+| Aide | Onboarding au premier lancement, visite guidée, conseils et démos contextuelles |
 
-## 🧰 Prérequis
+Les formats source pris en charge sont :
+
+- images : JPEG, PNG, WebP et BMP ;
+- audio : MP3, WAV, OGG, M4A, AAC et FLAC ;
+- vidéo : MP4, MOV, MKV, WebM, AVI et M4V.
+
+## Installation
+
+### Paquet Debian
+
+Téléchargez le fichier `.deb` depuis les
+[releases GitHub](https://github.com/nouhailler/videor2/releases), puis :
+
+```bash
+sudo apt install ./Videor-0.2.1-amd64.deb
+sudo apt install ffmpeg
+```
+
+L'application est ensuite disponible dans le menu du bureau ou avec :
+
+```bash
+videor
+```
+
+### AppImage
+
+Si une AppImage est fournie avec la release, après téléchargement :
+
+```bash
+chmod +x Videor-0.2.1-x64.AppImage
+./Videor-0.2.1-x64.AppImage
+```
+
+FFmpeg reste nécessaire :
+
+```bash
+sudo apt install ffmpeg
+```
+
+### Depuis les sources
+
+```bash
+git clone https://github.com/nouhailler/videor2.git
+cd videor2
+npm install
+npm run dev
+```
+
+## Prérequis
 
 | Outil | Version recommandée | Vérification |
 | --- | --- | --- |
-| 🐧 Linux | Distribution récente | `uname -a` |
-| 🟢 Node.js | 20 ou plus récent | `node --version` |
-| 📦 npm | Fourni avec Node.js | `npm --version` |
-| 🎞️ FFmpeg | Avec H.264 et VP9 | `ffmpeg -version` |
-| 🔍 FFprobe | Fourni avec FFmpeg | `ffprobe -version` |
+| Linux | Distribution récente 64 bits | `uname -a` |
+| Node.js | 20 ou plus récent, pour le développement | `node --version` |
+| npm | Fourni avec Node.js | `npm --version` |
+| FFmpeg | Avec H.264, AAC, VP9 et Opus | `ffmpeg -version` |
+| FFprobe | Fourni avec FFmpeg | `ffprobe -version` |
 
 Sur Debian ou Ubuntu :
 
@@ -80,61 +128,98 @@ sudo apt update
 sudo apt install ffmpeg
 ```
 
-## 🚀 Installation
+## Premiers pas
 
-Clonez le dépôt, puis installez les dépendances :
+### Créer un diaporama
 
-```bash
-git clone https://github.com/nouhailler/videor2.git
-cd videor2
-npm install
-```
+1. Cliquez sur **Ajouter des photos** ou déposez les images dans la fenêtre.
+2. Réorganisez les clips dans la timeline par glisser-déposer.
+3. Sélectionnez une photo pour régler sa durée, sa rotation et son cadrage.
+4. Ouvrez l'onglet **Audio** pour ajouter une piste et régler son volume.
+5. Utilisez les commandes sous l'aperçu pour vérifier le montage.
+6. Cliquez sur **Exporter la vidéo**, choisissez le format et la résolution.
 
-Lancez l'application en mode développement :
+Si la piste audio est plus courte que le diaporama, l'aperçu continue et
+l'export ajoute du silence jusqu'à la dernière photo. Si elle est plus longue,
+la sortie s'arrête à la fin du diaporama.
 
-```bash
-npm run dev
-```
+### Découper une vidéo
 
-> [!TIP]
-> Les messages `libva error` liés à un GPU virtuel ne sont généralement pas
-> bloquants. Electron bascule automatiquement vers un rendu logiciel.
+1. Ouvrez l'onglet **Vidéo**, puis cliquez sur **Charger une vidéo**.
+2. Déplacez la tête de lecture à l'endroit souhaité.
+3. Utilisez **Commencer ici** ou **Terminer ici** pour raccourcir la vidéo.
+4. Pour retirer une plage interne, marquez son début puis sa fin.
+5. Vérifiez les coupes dans la timeline et exportez le résultat.
 
-## 🎛️ Utilisation
+La découpe est non destructive : le fichier source n'est jamais modifié.
+Charger une vidéo remplace le diaporama courant après confirmation.
 
-### Mode développement
+### Enregistrer et restaurer un projet
 
-```bash
-npm run dev
-```
+- **Enregistrer** écrit le projet dans un fichier `.videor`.
+- **Projet** exporte une copie du fichier projet sans changer son emplacement.
+- Les modifications sont sauvegardées automatiquement après un court délai.
+- Au prochain démarrage, la dernière sauvegarde automatique est restaurée.
 
-Vite démarre l'interface sur `http://127.0.0.1:5173`, puis Electron ouvre la
-fenêtre de l'application.
+Un fichier `.videor` contient les réglages et les chemins absolus des médias,
+mais pas les médias eux-mêmes. Conservez donc les photos, l'audio et la vidéo à
+leur emplacement d'origine.
 
-### Build local
+### Paramètres
 
-```bash
-npm run build
-npm start
-```
+Le bouton en forme d'engrenage permet de définir :
 
-### Commandes disponibles
+- la durée appliquée aux nouvelles photos ;
+- le format d'export par défaut ;
+- la résolution d'export par défaut ;
+- l'affichage des confirmations avant une suppression ou un remplacement.
+
+Ces préférences sont conservées localement sur la machine.
+
+### Aide intégrée
+
+Au premier démarrage, Vidéor affiche une introduction en quatre étapes, suivie
+d'une visite guidée des principales zones de l'interface.
+
+L'aide reste ensuite accessible avec le bouton `?` de la barre supérieure :
+
+- le centre d'aide explique chaque écran et chaque mode ;
+- les boutons **Conseil** ouvrent directement la rubrique correspondant à la
+  zone affichée ;
+- chaque rubrique propose une démonstration animée qui ne modifie pas le projet ;
+- l'introduction et la visite guidée peuvent être relancées à tout moment ;
+- la touche `Échap` ferme la visite, le centre d'aide ou une démonstration.
+
+## Développement
+
+### Commandes
 
 | Commande | Description |
 | --- | --- |
 | `npm run dev` | Lance Vite et Electron avec rechargement à chaud |
-| `npm run build` | Vérifie TypeScript et génère le build de production |
+| `npm run build` | Vérifie TypeScript et génère `dist/` |
 | `npm start` | Lance Electron avec le build présent dans `dist/` |
-| `npm test` | Exécute les tests Vitest |
-| `npm run package:linux` | Produit les paquets AppImage et DEB |
+| `npm test` | Exécute les tests Vitest, dont l'intégration FFmpeg |
+| `npm run package:deb` | Produit uniquement le paquet Debian |
+| `npm run package:linux` | Produit l'AppImage et le paquet Debian |
 
-## 📦 Créer un paquet Linux
+Validation recommandée avant un commit :
+
+```bash
+npm test
+npm run build
+```
+
+Le test d'intégration lance réellement FFmpeg et FFprobe. Ces deux commandes
+doivent donc être accessibles dans `PATH`.
+
+### Créer les paquets Linux
 
 ```bash
 npm run package:linux
 ```
 
-Les paquets sont générés dans le dossier `release/` :
+Les artefacts sont générés dans `release/` :
 
 ```text
 release/
@@ -142,77 +227,120 @@ release/
 └── Videor-0.2.1-amd64.deb
 ```
 
-## 🏗️ Architecture
+## Architecture
 
 ```text
 videor/
 ├── electron/
-│   ├── main.cjs          # Fenêtre, fichiers projet et export FFmpeg
-│   └── preload.cjs       # API sécurisée exposée à l'interface
+│   ├── main.cjs                    # Fenêtre, IPC, fichiers et processus FFmpeg
+│   ├── preload.cjs                 # API limitée exposée au renderer
+│   ├── mediaProtocol.cjs           # Lecture locale et requêtes HTTP Range
+│   ├── projectValidation.cjs       # Validation des projets .videor
+│   ├── slideshowExport.cjs         # Export FFmpeg des diaporamas
+│   └── videoExport.cjs             # Export FFmpeg des vidéos découpées
 ├── src/
-│   ├── App.tsx           # Éditeur et logique de l'interface
-│   ├── main.tsx          # Point d'entrée React
-│   ├── styles.css        # Design system et mise en page
-│   └── videor.d.ts       # Types de l'API Electron
-├── stitch/               # Prototype et références de conception
-├── package.json
-└── vite.config.ts
+│   ├── App.tsx                     # Interface et état de l'éditeur
+│   ├── GuidanceUI.tsx              # Onboarding, visite, aide et démonstrations
+│   ├── guidance.ts                 # Contenus et persistance de l'aide
+│   ├── videoEditing.ts             # Calculs de découpe et conversion du temps
+│   ├── main.tsx                    # Point d'entrée React
+│   ├── styles.css                  # Mise en page et composants visuels
+│   └── videor.d.ts                 # Types de l'API Electron
+├── build/                          # Icônes et scripts Debian
+├── test/                           # Photos utilisées pour les tests manuels
+├── stitch/                         # Prototype et références graphiques
+├── CHANGELOG.md
+├── CONTEXT.md
+└── package.json
 ```
 
-### Technologies
+Le renderer Electron utilise `contextIsolation`, sans accès direct à Node.js.
+Les opérations système passent par l'API limitée de `preload.cjs`.
 
-- ⚛️ **React** pour l'interface
-- 🔷 **TypeScript** pour le typage
-- ⚡ **Vite** pour le développement et le build
-- 🖥️ **Electron** pour l'intégration Linux
-- 🎞️ **FFmpeg** pour l'encodage MP4 et WebM
-- 🧩 **Lucide** pour les icônes de l'interface
+## Format des projets
 
-## 💾 Format des projets
+Les projets sont des documents JSON portant l'extension `.videor` :
 
-Les projets utilisent l'extension `.videor`. Il s'agit d'un document JSON
-contenant notamment :
+```json
+{
+  "format": "videor-project",
+  "version": 1,
+  "name": "Mon projet",
+  "photos": [],
+  "audio": null,
+  "video": null
+}
+```
 
-- les chemins des photos et de la piste audio ;
-- le chemin de la vidéo source et ses repères de coupe ;
-- l'ordre et la durée de chaque photo ;
-- la rotation et les paramètres de recadrage ;
-- le volume de la piste audio.
+À l'ouverture et à l'enregistrement, Vidéor contrôle notamment :
 
-À l'ouverture et à l'enregistrement, Vidéor valide la structure du projet, sa
-version, les types de médias, les durées et les paramètres d'édition. Les
-fichiers incompatibles ou corrompus sont refusés avec un message explicite.
+- la version et la structure du document ;
+- les extensions des médias ;
+- les durées, volumes, rotations et positions ;
+- la cohérence entre le mode diaporama et le mode vidéo ;
+- les bornes et la durée minimale des coupes.
 
-> [!WARNING]
-> Le fichier projet référence actuellement les médias à leur emplacement
-> d'origine. Déplacer ou supprimer ces fichiers peut empêcher leur chargement.
+Un fichier corrompu, incompatible ou mélangeant les deux modes est refusé avec
+un message explicite.
 
-## 🗺️ Feuille de route
+## Dépannage
 
-- [x] Interface principale et timeline simplifiée
-- [x] Import multiple et glisser-déposer
-- [x] Lecture synchronisée avec l'audio
-- [x] Sauvegarde automatique des projets
-- [x] Export MP4/H.264 et WebM/VP9
-- [x] Découpe non destructive d'une vidéo existante
+### `ffmpeg` ou `ffprobe` introuvable
+
+```bash
+sudo apt install ffmpeg
+ffmpeg -version
+ffprobe -version
+```
+
+### Une photo, une piste audio ou une vidéo ne se charge plus
+
+Le projet référence le chemin d'origine. Replacez le média à cet emplacement ou
+réimportez-le dans le projet.
+
+### Message `libva error`
+
+Cette erreur apparaît avec certains pilotes ou environnements virtualisés.
+Vidéor désactive l'accélération matérielle sous Linux et utilise le rendu
+logiciel ; le message n'est généralement pas bloquant.
+
+### L'export échoue
+
+Vérifiez que FFmpeg fournit les encodeurs nécessaires :
+
+```bash
+ffmpeg -encoders | grep -E 'libx264|libvpx-vp9|aac|libopus'
+```
+
+Vérifiez également que les médias du projet existent encore et sont lisibles.
+
+## Limites actuelles
+
+- les médias ne sont pas intégrés aux fichiers projet ;
+- la forme d'onde audio est décorative ;
+- aucune transition ou animation Ken Burns n'est disponible ;
+- l'enregistrement de narration n'est pas implémenté ;
+- FFmpeg doit être installé séparément ;
+- l'interface Electron ne dispose pas encore d'une couverture automatisée
+  complète.
+
+## Feuille de route
+
+- [x] Diaporama photo avec piste audio
+- [x] Découpe non destructive d'une vidéo
+- [x] Export MP4 et WebM
+- [x] Validation des projets et test d'intégration FFmpeg
+- [ ] Tests automatisés complets de l'interface Electron
 - [ ] Transitions entre les photos
 - [ ] Effet de mouvement Ken Burns
+- [ ] Forme d'onde calculée depuis le signal audio
 - [ ] Enregistrement d'une narration
-- [ ] Projet portable avec médias embarqués
-- [x] Tests unitaires des calculs de découpe et de la validation des projets
-- [x] Test d'intégration FFmpeg de l'export avec audio court
-- [ ] Tests automatisés complets de l'interface Electron
+- [ ] Projets portables avec médias embarqués
 
-## 📝 Suivi du projet
+## Documentation du projet
 
-- Consultez [`CHANGELOG.md`](CHANGELOG.md) pour les changements entre versions.
-- Consultez [`CONTEXT.md`](CONTEXT.md) pour reprendre rapidement le
-  développement et connaître les limites actuelles.
+- [`CHANGELOG.md`](CHANGELOG.md) : évolutions publiées et non publiées ;
+- [`CONTEXT.md`](CONTEXT.md) : architecture, contraintes et procédure de
+  validation destinée aux mainteneurs.
 
----
-
-<div align="center">
-
-**Vidéor** · Un éditeur vidéo volontairement simple pour Linux.
-
-</div>
+Le projet est déclaré sous licence MIT dans `package.json`.

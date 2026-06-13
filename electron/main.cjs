@@ -120,6 +120,47 @@ function createWindow() {
       })`);
       console.log("VIDEOR_VIDEO_SMOKE_RESULT", JSON.stringify(result));
     });
+  } else if (!app.isPackaged && process.env.VIDEOR_SMOKE_GUIDANCE) {
+    mainWindow.webContents.once("did-finish-load", async () => {
+      const result = {
+        onboarding: await mainWindow.webContents.executeJavaScript(
+          "document.querySelectorAll('.onboarding-modal').length"
+        )
+      };
+      for (let index = 0; index < 4; index += 1) {
+        await mainWindow.webContents.executeJavaScript(
+          "document.querySelector('.onboarding-actions .primary')?.click()"
+        );
+        await new Promise((resolve) => setTimeout(resolve, 120));
+      }
+      result.tour = await mainWindow.webContents.executeJavaScript(`({
+        card: document.querySelectorAll('.tour-card').length,
+        spotlight: document.querySelectorAll('.tour-spotlight').length
+      })`);
+      for (let index = 0; index < 6; index += 1) {
+        await mainWindow.webContents.executeJavaScript(
+          "document.querySelector('.tour-actions .primary')?.click()"
+        );
+        await new Promise((resolve) => setTimeout(resolve, 80));
+      }
+      await mainWindow.webContents.executeJavaScript(
+        "document.querySelector('button[title=\"Aide\"]')?.click()"
+      );
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      result.help = await mainWindow.webContents.executeJavaScript(`({
+        center: document.querySelectorAll('.help-center').length,
+        topics: document.querySelectorAll('.help-topic-tabs button').length,
+        tips: document.querySelectorAll('.help-tips > div').length
+      })`);
+      await mainWindow.webContents.executeJavaScript(
+        "document.querySelector('.help-demo-button')?.click()"
+      );
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      result.demo = await mainWindow.webContents.executeJavaScript(
+        "document.querySelectorAll('.demo-modal').length"
+      );
+      console.log("VIDEOR_GUIDANCE_SMOKE_RESULT", JSON.stringify(result));
+    });
   }
 
   if (process.env.VITE_DEV_SERVER_URL) {

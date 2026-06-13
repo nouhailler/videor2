@@ -15,13 +15,20 @@ projet utilise le [versionnage sémantique](https://semver.org/lang/fr/).
   des médias ;
 - validation et normalisation des fichiers projet version 1 ;
 - tests de la validation des projets et de la commande FFmpeg des diaporamas ;
-- test d'intégration FFmpeg avec une piste audio plus courte que le montage.
+- test d'intégration FFmpeg avec une piste audio plus courte que le montage ;
+- onboarding au premier lancement et visite guidée de l'espace de travail ;
+- centre d'aide contextuel avec conseils et démonstrations pour chaque écran.
 
 ### Corrigé
 
 - l'aperçu continue désormais après la fin d'une piste audio courte ;
 - l'export complète une piste audio courte par du silence au lieu de raccourcir
   la vidéo à la durée de l'audio.
+
+### Modifié
+
+- documentation réorganisée autour de l'installation, des premiers pas, des
+  paramètres, du dépannage et de la maintenance du projet.
 
 ### Prévu
 

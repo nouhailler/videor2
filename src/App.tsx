@@ -1,6 +1,7 @@
 import {
   ChevronLeft,
   ChevronRight,
+  CircleHelp,
   Clock3,
   Crop,
   Download,
@@ -12,6 +13,7 @@ import {
   FolderOpen,
   ImagePlus,
   Images,
+  Lightbulb,
   Menu,
   Music2,
   Pause,
@@ -45,6 +47,17 @@ import {
   sourceTimeToEdited,
   TimeRange
 } from "./videoEditing";
+import {
+  ContextTip,
+  GuidedTour,
+  HelpCenter,
+  OnboardingModal
+} from "./GuidanceUI";
+import {
+  completeOnboarding,
+  HelpTopicId,
+  shouldShowOnboarding
+} from "./guidance";
 
 type Photo = {
   id: string;
@@ -172,6 +185,14 @@ function photoAtTime(photos: Photo[], time: number) {
 
 function App() {
   const [settings, setSettings] = useState<AppSettings>(loadSettings);
+  const [onboardingOpen, setOnboardingOpen] = useState(
+    () => shouldShowOnboarding(localStorage)
+  );
+  const [onboardingStep, setOnboardingStep] = useState(0);
+  const [tourOpen, setTourOpen] = useState(false);
+  const [tourStep, setTourStep] = useState(0);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [helpTopic, setHelpTopic] = useState<HelpTopicId>("projects");
   const [project, setProject] = useState<Project>(emptyProject);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
@@ -299,6 +320,36 @@ function App() {
   const confirmDestructive = useCallback((message: string) => {
     return !settings.confirmDestructiveActions || window.confirm(message);
   }, [settings.confirmDestructiveActions]);
+
+  const openHelp = useCallback((topic: HelpTopicId) => {
+    setHelpTopic(topic);
+    setHelpOpen(true);
+  }, []);
+
+  const closeOnboarding = useCallback(() => {
+    completeOnboarding(localStorage);
+    setOnboardingOpen(false);
+  }, []);
+
+  const finishOnboarding = useCallback(() => {
+    closeOnboarding();
+    setTourStep(0);
+    setTourOpen(true);
+  }, [closeOnboarding]);
+
+  const startTour = useCallback(() => {
+    setHelpOpen(false);
+    setOnboardingOpen(false);
+    setTourStep(0);
+    setTourOpen(true);
+  }, []);
+
+  const restartOnboarding = useCallback(() => {
+    setHelpOpen(false);
+    setTourOpen(false);
+    setOnboardingStep(0);
+    setOnboardingOpen(true);
+  }, []);
 
   const addPhotos = useCallback(async (paths: string[]) => {
     const accepted = paths.filter((path) => /\.(jpe?g|png|webp|bmp)$/i.test(path));
@@ -693,7 +744,7 @@ function App() {
           <div className="brand-mark"><Play size={13} fill="currentColor" /></div>
           <strong>Vidéor</strong>
         </div>
-        <nav className="top-actions">
+        <nav className="top-actions" data-tour="projects">
           <button onClick={newProject}><FilePlus2 size={iconSize} />Nouveau</button>
           <button onClick={openProject}><FolderOpen size={iconSize} />Ouvrir</button>
           <button onClick={() => saveProject(false)}><Save size={iconSize} />Enregistrer</button>
@@ -712,8 +763,11 @@ function App() {
           <span className={saved ? "save-dot saved" : "save-dot"} />
         </div>
         <div className="top-actions top-actions-right">
-          <button className="primary" onClick={() => setExportOpen(true)}>
+          <button className="primary" data-tour="export" onClick={() => setExportOpen(true)}>
             <Download size={iconSize} />Exporter la vidéo
+          </button>
+          <button className="icon-button" title="Aide" onClick={() => openHelp("projects")}>
+            <CircleHelp size={20} />
           </button>
           <button className="icon-button" title="Paramètres" onClick={() => setSettingsOpen(true)}>
             <Settings size={20} />
@@ -722,7 +776,7 @@ function App() {
       </header>
 
       <main className="workspace">
-        <aside className="library panel">
+        <aside className="library panel" data-tour="library">
           <div className="panel-heading">
             <div>
               <span className="eyebrow">MÉDIATHÈQUE</span>
@@ -749,6 +803,7 @@ function App() {
               </button>
             )}
           </div>
+          <ContextTip topic={libraryTab} onOpenHelp={openHelp} />
 
           {libraryTab === "photos" ? (
             <div className="library-content">
@@ -857,12 +912,17 @@ function App() {
         </aside>
 
         <section className="editor">
-          <div className="preview-wrap panel">
+          <div className="preview-wrap panel" data-tour="preview">
             <div className="preview-header">
               <span>Aperçu</span>
-              <button className="icon-button" onClick={() => playerRef.current?.requestFullscreen()} title="Plein écran">
-                <Expand size={17} />
-              </button>
+              <div className="panel-help-actions">
+                <button className="mini-tip" onClick={() => openHelp("preview")}>
+                  <Lightbulb size={14} />Conseil
+                </button>
+                <button className="icon-button" onClick={() => playerRef.current?.requestFullscreen()} title="Plein écran">
+                  <Expand size={17} />
+                </button>
+              </div>
             </div>
             <div className="player" ref={playerRef}>
               {project.video ? (
@@ -916,7 +976,7 @@ function App() {
             </div>
           </div>
 
-          <div className="timeline panel">
+          <div className="timeline panel" data-tour="timeline">
             <div className="timeline-heading">
               <div>
                 <span className="eyebrow">TIMELINE</span>
@@ -927,9 +987,14 @@ function App() {
                   {" · "}{formatTime(totalDuration)}
                 </strong>
               </div>
-              <button className="secondary small" onClick={project.video ? chooseVideo : choosePhotos}>
-                <Plus size={15} />{project.video ? "Remplacer" : "Ajouter"}
-              </button>
+              <div className="panel-help-actions">
+                <button className="mini-tip" onClick={() => openHelp("timeline")}>
+                  <Lightbulb size={14} />Conseil
+                </button>
+                <button className="secondary small" onClick={project.video ? chooseVideo : choosePhotos}>
+                  <Plus size={15} />{project.video ? "Remplacer" : "Ajouter"}
+                </button>
+              </div>
             </div>
             <div className="timeline-scroll">
               <div className="photo-track">
@@ -1031,12 +1096,15 @@ function App() {
           </div>
         </section>
 
-        <aside className="inspector panel">
+        <aside className="inspector panel" data-tour="inspector">
           <div className="panel-heading">
             <div>
               <span className="eyebrow">INSPECTEUR</span>
               <h2>{project.video ? "Découpe vidéo" : "Photo"}</h2>
             </div>
+            <button className="mini-tip icon-only" onClick={() => openHelp("inspector")} title="Conseil sur l’inspecteur">
+              <Lightbulb size={15} />
+            </button>
           </div>
           {project.video ? (
             <div className="inspector-content">
@@ -1247,6 +1315,7 @@ function App() {
                 <X size={20} />
               </button>
             </div>
+            <ContextTip topic="settings" onOpenHelp={openHelp} />
             <div className="settings-content">
               <label className="settings-field">
                 <span>Durée par défaut d’une nouvelle photo</span>
@@ -1340,6 +1409,7 @@ function App() {
               </div>
               <button className="icon-button" onClick={() => setExportOpen(false)} disabled={exportProgress !== null}><X size={20} /></button>
             </div>
+            <ContextTip topic="export" onOpenHelp={openHelp} />
             <div className="export-summary">
               <div>
                 {project.video ? <Film size={20} /> : <Images size={20} />}
@@ -1398,6 +1468,27 @@ function App() {
           </section>
         </div>
       )}
+
+      <OnboardingModal
+        open={onboardingOpen}
+        step={onboardingStep}
+        onStep={setOnboardingStep}
+        onSkip={closeOnboarding}
+        onFinish={finishOnboarding}
+      />
+      <GuidedTour
+        open={tourOpen}
+        step={tourStep}
+        onStep={setTourStep}
+        onClose={() => setTourOpen(false)}
+      />
+      <HelpCenter
+        open={helpOpen}
+        initialTopic={helpTopic}
+        onClose={() => setHelpOpen(false)}
+        onStartTour={startTour}
+        onStartOnboarding={restartOnboarding}
+      />
     </div>
   );
 }
